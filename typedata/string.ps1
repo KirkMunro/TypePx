@@ -27,7 +27,7 @@ Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberN
     [System.Diagnostics.DebuggerStepThrough()]
     param()
     try {
-        $escapedString = $this.Replace('"','""""')
+        $escapedString = $this.Replace('"','""')
         . $ExecutionContext.InvokeCommand.NewScriptBlock("""${escapedString}""")
     } catch {
         if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
@@ -47,6 +47,9 @@ Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberN
         [System.String[]]
         $Values
     )
+    if ($args) {
+        $Values += $args
+    }
     $stringToCompare = $this
     $Values.where({$stringToCompare -match $_}).Count -gt 0
 }
@@ -60,6 +63,9 @@ Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberN
         [System.String[]]
         $Values
     )
+    if ($args) {
+        $Values += $args
+    }
     $stringToCompare = $this
     $Values.where({$stringToCompare -like $_}).Count -gt 0
 }

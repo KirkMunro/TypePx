@@ -120,8 +120,16 @@ Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -Me
     [System.Diagnostics.DebuggerHidden()]
     param(
         # The names of the parameters that you want to splat into other commands.
-        [System.String[]]$ParameterName
+        [System.String[]]$ParameterName = @()
     )
+    #region Make sure we work like a function, without requiring array input.
+
+    if ($args) {
+        $ParameterName += $args
+    }
+
+    #endregion
+
     #region Define the hashtable that will contain the pass thru parameters.
 
     $splattableParameters = @{}
