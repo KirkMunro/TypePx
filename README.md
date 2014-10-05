@@ -245,10 +245,6 @@ $uri = 'http://the.earth.li/~sgtatham/putty/latest/x86/plink.exe'
 $ExecutionContext.SessionState.Module.GetLocalStoragePath($true)
 # From inside a module, get the MLS location for all users
 $ExecutionContext.SessionState.Module.GetLocalStoragePath()
-# Download a file to MLS for the current user if it is not already downloaded
-$ExecutionContext.SessionState.Module.DownloadFileToLocalStorage($uri,$null,$true)
-# Download a file to MLS for all users if it is not already downloaded
-$ExecutionContext.SessionState.Module.DownloadFileToLocalStorage($uri)
 ```
 
 There are also extensions that make some tasks easier when working with
