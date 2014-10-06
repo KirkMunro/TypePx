@@ -12,8 +12,8 @@ belong to the same namespace.
 
 ### Minimum requirements
 
-PowerShell 3.0
-SnippetPx module
+- PowerShell 3.0
+- SnippetPx module
 
 ### License and Copyright
 
