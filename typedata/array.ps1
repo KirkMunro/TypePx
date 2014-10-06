@@ -72,7 +72,7 @@ Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberNa
     param(
         [Parameter(Position=0)]
         [ValidateNotNull()]
-        [ValidateRange(0,2147483647)]
+        [ValidateRange(0,[System.Int32]::MaxValue)]
         [System.Int32]
         $Level
     )
@@ -95,20 +95,31 @@ Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberNa
     param(
         [Parameter(Position=0, Mandatory=$true)]
         [ValidateNotNull()]
-        [ValidateRange(1,2147483647)]
+        [ValidateRange(1,[System.Int32]::MaxValue)]
         [System.Int32]
         $Count
     )
     $chunk = New-Object -TypeName System.Collections.ArrayList
+    $firstReturn = $true
     $this.foreach({
         if ($chunk.Count -eq $Count) {
-            ,($chunk.ToArray() -as $this.GetType())
+            if ($firstReturn) {
+                $firstReturn = $false
+                ,,($chunk.ToArray() -as $this.GetType())
+            } else {
+                ,($chunk.ToArray() -as $this.GetType())
+            }
             $chunk.Clear()
         }
         $chunk.Add($_) > $null
     })
     if ($chunk.Count) {
-        ,($chunk.ToArray() -as $this.GetType())
+        if ($firstReturn) {
+            $firstReturn = $false
+            ,,($chunk.ToArray() -as $this.GetType())
+        } else {
+            ,($chunk.ToArray() -as $this.GetType())
+        }
     }
 }
 $script:TypeExtensions.AddArrayItem('System.Array','Slice')

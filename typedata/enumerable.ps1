@@ -53,7 +53,9 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
             )
             if ($Object -is [System.Management.Automation.ScriptBlock]) {
                 # Process as if we used ForEach-Object
-                $this | ForEach-Object -Process $ScriptBlock
+                if ($result = $this | ForEach-Object -Process $Object) {
+                    ,$result
+                }
             } elseif ($Object -is [System.Type]) {
                 # Convert the items in the collection to the type specified
                 foreach ($item in $this) {
@@ -96,7 +98,7 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
 
                 [Parameter(Position=2)]
                 [ValidateNotNull()]
-                [ValidateRange(1,[System.Int32]::MaxValue)]
+                [ValidateRange(0,[System.Int32]::MaxValue)]
                 [System.Int32]
                 $NumberToReturn = 0
             )
@@ -251,8 +253,16 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
             $Property
         )
         $total = $null
-        if ($Property) {
-            $this.foreach({$total += $_.$Property})
+        if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
+            foreach ($item in $this) {
+                if ($Property) {
+                    $total += $item.$Property
+                } else {
+                    $total += $item
+                }
+            }
+        } elseif ($Property) {
+                $this.foreach({$total += $_.$Property})
         } else {
             $this.foreach({$total += $_})
         }

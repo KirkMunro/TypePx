@@ -103,7 +103,8 @@ $a = 1..10
 $a.ToString()
 # Compact (remove null values) from an array
 $a = 1,$null,2,$null,3
-$a.Compact()
+$a.Count
+$a.Compact().Count
 # Return unique elements in an array
 $a = 1,1,2,3,3,4,4,5,6
 $a.Unique()
@@ -145,7 +146,6 @@ $x.Times({'Hello'})
 ######################
 # Fun with collections
 ######################
-# Note that PowerShell 4+ include foreach and where "magic" methods. This module
 # Compare collections against collections
 $names = gsv | Select-Object -ExpandProperty Name
 $names.MatchAny('^b','^u')
@@ -162,6 +162,7 @@ $ht.Add('A','This is not a collection')
 $ht.AddArrayItem('B','This is a collection')
 $ht.AddArrayItem('B','This adds to the collection')
 $ht
+# Note that PowerShell 4+ include foreach and where "magic" methods. This module
 # adds them to PowerShell 3
 # Expand a property in a collection
 (gsv).foreach('Name')
