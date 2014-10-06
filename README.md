@@ -10,6 +10,11 @@ acceleration also contributes to making scripting easier and they help produce
 more readable scripts, particularly when using a library of .NET classes that
 belong to the same namespace.
 
+### Minimum requirements
+
+PowerShell 3.0
+SnippetPx module
+
 ### License and Copyright
 
 Copyright (c) 2014 Kirk Munro.
