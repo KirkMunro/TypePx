@@ -246,7 +246,6 @@ that have been added to the System.Management.Automation.PSModuleInfo type:
 #########################################
 # Working with Module Local Storage (MLS)
 #########################################
-$uri = 'http://the.earth.li/~sgtatham/putty/latest/x86/plink.exe'
 # From inside a module, get the MLS location for the current user
 $ExecutionContext.SessionState.Module.GetLocalStoragePath($true)
 # From inside a module, get the MLS location for all users
