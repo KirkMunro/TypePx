@@ -55,7 +55,7 @@ try {
     #region Get the currently installed module (if there is one).
 
     Write-Progress -Activity 'Installing TypePx' -Status 'Looking for an installed TypePx module.'
-    $module = Get-Module -ListAvailable | Where-Object {$_.Guid -eq [System.Guid]'161b91e7-ca3d-40e2-8d0e-e00b31740f90'}
+    $module = Get-Module -ListAvailable | Where-Object {$_.Guid -eq [System.Guid]'cacd8e78-b36a-4c37-90f8-9f8e2879abd6'}
     if ($module -is [System.Array]) {
         [System.String]$message = 'More than one version of TypePx is installed on this system. Manually remove the old versions and then try again.'
         [System.Management.Automation.SessionStateException]$exception = New-Object -TypeName System.Management.Automation.SessionStateException -ArgumentList $message
