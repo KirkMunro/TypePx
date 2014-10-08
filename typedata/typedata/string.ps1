@@ -23,31 +23,72 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName Peek -Value {
-    [System.Diagnostics.DebuggerHidden()]
+Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberName Expand -Value {
+    [System.Diagnostics.DebuggerStepThrough()]
     param()
     try {
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($this)
-        [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-    } finally {
-        if ($bstr -ne $null) {
-            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+        $escapedString = $this.Replace('"','""')
+        . $ExecutionContext.InvokeCommand.NewScriptBlock("""${escapedString}""")
+    } catch {
+        if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+            $PSCmdlet.ThrowTerminatingError($_)
+        } else {
+            throw
         }
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','Peek')
+$script:TypeExtensions.AddArrayItem('System.String','Expand')
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
+Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberName MatchAny -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $Values
+    )
+    if ($args) {
+        $Values += $args
+    }
+    $stringToCompare = $this
+    $Values.where({$stringToCompare -match $_}).Count -gt 0
+}
+$script:TypeExtensions.AddArrayItem('System.String','MatchAny')
+
+Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberName LikeAny -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $Values
+    )
+    if ($args) {
+        $Values += $args
+    }
+    $stringToCompare = $this
+    $Values.where({$stringToCompare -like $_}).Count -gt 0
+}
+$script:TypeExtensions.AddArrayItem('System.String','LikeAny')
+
+Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
     [System.Diagnostics.DebuggerHidden()]
     param()
-    $this.Peek().GetMD5Hash()
+    $md5 = [System.Security.Cryptography.MD5]::Create()
+    $bytes = [System.Text.Encoding]::ASCII.GetBytes($this)
+    $hash = $md5.ComputeHash($bytes)
+    $sb = New-Object -TypeName System.Text.StringBuilder
+    for ($index = 0; $index -lt $hash.Count; $index++) {
+        $sb.Append($hash[$index].ToString("x2")) > $null
+    }
+    $sb.ToString()
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
+$script:TypeExtensions.AddArrayItem('System.String','GetMD5Hash')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSXH48STNu5y91Y8/EcBCy3IX
-# LzigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUqKHXGVmAzOpSX+di99bLGSzK
+# xNigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -160,23 +201,23 @@ $script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCcH
-# 5HDSRMYqIFbX2KB9HUKjvh6QMA0GCSqGSIb3DQEBAQUABIIBAB44ovPASZ4mb+oU
-# y3mtH2dBab4JqsqmZXFwJfEO9jKO6/RGCdkbC4NT003aah2uzLFweEYZdyOcgtNz
-# 6WjCFYxj7WqOvS/VFcXVUdhn1JPLkpFfAe8VSs7SjiZ+HzP5ZpT72dGnAmiPpTcT
-# KLSfJ8zLDyd8uUNnF+W6cB/zDjWUsez1K5mLSzEgYv9Jr6GnqtZEBqZg/dpUotPz
-# XUg2tbpvTGMDLe8mIecAd4szBer+FuZHm/+uhm85el2HFtj0ziYeemu90EHJiJNh
-# 3djRZ/GSvOLK6T71W6ZceCzWUFqojFtTStGOWERFy1j0PYKZ2liJ6ivfXZME262J
-# QJodb6ChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFA6z
+# UJO+JBO2NCNG4w8GDYZd0F4lMA0GCSqGSIb3DQEBAQUABIIBAHpDus0t/0w1Dja0
+# /BMdeV+zxuRQJGIhAK8Z8kTeISB037fpDzo6juWgvWD0O5A7j9Zn3YasWQD0N5ry
+# QusBCTd7qqRu6C4Bqs513R8fgGQT3Nlzi/c0weZ91XKYP04vquk9m5G2kmgM9af1
+# njgE+tgl3J5PJpzVLK7G2/M6IScJRhfI+56ZT3gVbYsmAFDiVCNOp/3VQb8zljpC
+# iDZ6xL4jw7ybzoa09Jv0ircVnGAM6jni5WGzGYIm0MT5uTmaG1+tVOqeF1gnO0Gy
+# t3TUzpLHR1OZ8DrNqEAMeh5zJvh3P4OdG0+oI35PTY6TGHlh1d7Y2F8UBG9XFWXo
+# zQFhUpqhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUQpFT
-# e36mc+I2Hc3jx5hLjxsL5M8wDQYJKoZIhvcNAQEBBQAEggEAEWc5htTwnEgyLv4P
-# Dw+UbmTk+6icZATaRH8XpB8BqjpnK9wfJr2TmayvZogYmscW/oNCmck08/EozP4y
-# o7X9gEPm23PIF1uskWitk4RruIm2/cnVZFc8Ykj53X3oHpiHqiePP2IxdwMWkrPU
-# i83jDzngUoOf6zm551tqvDNDhcuuEemDgPP2hXLhCNQkfkFPMCthe69qJaeeagj5
-# K19siXOKYYxw9c05BodKW0Etl7W15PXJpKTDLn+XMQvrtVoiQ5d1ScttjloqnLNN
-# n8iDxef+OIh6nTIibgx+ybiJNBz/RaNFh5HE+lIZku1rD7mTyghTYmFzk8kfSXnR
-# BK2Kww==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODM2WjAjBgkqhkiG9w0BCQQxFgQUqfUO
+# /2D+AFmyQnf7b5cqtJJm90MwDQYJKoZIhvcNAQEBBQAEggEAJs5Z5M2G0G/RGmSL
+# P8bbEdUCoDGXwcJXaW8iOFQPpyq+Kyb6HSyeNQmOLb+fBPZ6GPs2BKhtGTUFZLub
+# YfM5YoSnNM/pMRDcL02ZI507E9p0lS5u2ZYOFtmLpZLPk8q+/EXJgKG6ImbPdR1Q
+# 6BlXSHFqYjdTTolvsOKs7SKTmSbk8zmyV3WWClU0U8FuDOo26Wf1qPUQCcUC5SMa
+# JM5R9SR6VIPoWtgYv0e9Ac3HxqZYSLp7QPxnSXAyKXxI3owKSi64xAMhSHhJizlR
+# zhUxzQZr0FqAl4GVSXcz4xXjBubECKbQ7lBH1gBQSvZpu0Kegrn5rB7KU8U8fgAy
+# n9KyLw==
 # SIG # End signature block

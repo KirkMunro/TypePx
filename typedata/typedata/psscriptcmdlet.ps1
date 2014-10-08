@@ -23,31 +23,184 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName Peek -Value {
+Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ThrowException -Value {
     [System.Diagnostics.DebuggerHidden()]
-    param()
+    param(
+        [System.Exception]$Exception,
+        [System.Management.Automation.ErrorCategory]$ErrorCategory,
+        [System.Object]$RelatedObject = $null
+    )
     try {
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($this)
-        [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-    } finally {
-        if ($bstr -ne $null) {
-            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-        }
+        $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList @(
+            $Exception
+            $Exception.GetType().Name
+            $ErrorCategory
+            $RelatedObject
+        )
+        throw $errorRecord
+    } catch {
+        $this.ThrowTerminatingError($_)
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','Peek')
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ThrowException')
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
+Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ThrowError -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [System.String]$Message,
+        [System.String]$ExceptionTypeName,
+        [System.Management.Automation.ErrorCategory]$ErrorCategory,
+        [System.Object]$RelatedObject = $null
+    )
+    try {
+        $exception = New-Object -TypeName $ExceptionTypeName -ArgumentList $Message
+        $this.ThrowException($exception, $ErrorCategory, $RelatedObject)
+    } catch {
+        $this.ThrowTerminatingError($_)
+    }
+}
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ThrowError')
+
+Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ThrowCommandNotFoundError -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [System.String]$CommandName,
+        [System.Object]$RelatedObject = $null
+    )
+    try {
+        $message = $this.GetResourceString('DiscoveryExceptions','CommandNotFoundException') -f $CommandName
+        $exception = New-Object -TypeName System.Management.Automation.CommandNotFoundException -ArgumentList $message
+        $exception.CommandName = $CommandName
+        $this.ThrowException($exception, [System.Management.Automation.ErrorCategory]::ObjectNotFound, $RelatedObject)
+    } catch {
+        $this.ThrowTerminatingError($_)
+    }
+}
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ThrowCommandNotFoundError')
+
+Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ValidateParameterDependency -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [System.String]$ParameterName,
+        [System.String[]]$RequiredParameterName
+    )
+    try {
+        if ($this.MyInvocation.BoundParameters.ContainsKey($ParameterName) -and
+            -not @($this.MyInvocation.BoundParameters.Keys).ContainsAny($RequiredParameterName)) {
+            $message = "The following parameters are required when using the ${ParameterName} parameter: $($RequiredParameterName -join ',')."
+            $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
+            $this.ThrowException($exception, [System.Management.Automation.ErrorCategory]::InvalidOperation)
+        }
+    } catch {
+        $this.ThrowTerminatingError($_)
+    }
+}
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ValidateParameterDependency')
+
+Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ValidateParameterIncompatibility -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [System.String]$ParameterName,
+        [System.String[]]$IncompatibleParameterName
+    )
+    try {
+        if ($this.MyInvocation.BoundParameters.ContainsKey($ParameterName) -and
+            @($this.MyInvocation.BoundParameters.Keys).ContainsAny($IncompatibleParameterName)) {
+            $message = "The following parameters may not be used in combination with the ${ParameterName} parameter: $($IncompatibleParameterName -join ',')."
+            $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
+            $this.ThrowException($exception, [System.Management.Automation.ErrorCategory]::InvalidOperation)
+        }
+    } catch {
+        $this.ThrowTerminatingError($_)
+    }
+}
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ValidateParameterIncompatibility')
+
+Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName GetSplattableParameters -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The names of the parameters that you want to splat into other commands.
+        [System.String[]]$ParameterName = @()
+    )
+    #region Make sure we work like a function, without requiring array input.
+
+    if ($args) {
+        $ParameterName += $args
+    }
+
+    #endregion
+
+    #region Define the hashtable that will contain the pass thru parameters.
+
+    $splattableParameters = @{}
+
+    #endregion
+
+    #region Load the parameters that will be passed through into the hashtable.
+
+    if (-not $ParameterName) {
+        # If no specific parameters were requested, splat all bound parameters.
+        $splattableParameters = $this.MyInvocation.BoundParameters
+    } else {
+        # Otherwise, only splat the bound parameters that were requested.
+        foreach ($item in $ParameterName) {
+            if ($this.MyInvocation.BoundParameters.ContainsKey($item)) {
+                $splattableParameters[$item] = $this.MyInvocation.BoundParameters.$item
+            }
+        }
+    }
+
+    #endregion
+
+    #region Return the hashtable to the caller.
+
+    $splattableParameters
+
+    #endregion
+}
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','GetSplattableParameters')
+
+Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName GetBoundPagingParameters -Value {
     [System.Diagnostics.DebuggerHidden()]
     param()
-    $this.Peek().GetMD5Hash()
+    #region Return the paging parameters in a splattable hashtable.
+
+    $commandMetadata = $this.MyInvocation.MyCommand -as [System.Management.Automation.CommandMetadata]
+    if (-not $commandMetadata -or -not $commandMetadata.SupportsPaging) {
+        # If paging is not supported for this command, return an empty hashtable.
+        @{}
+    } else {
+        # Otherwise, create a splattable hashtable containing all bound paging parameters.
+        $pagingParameterNames = Get-Member -InputObject $this.PagingParameters -MemberType Property | Select-Object -ExpandProperty Name
+        $this.GetSplattableParameters($pagingParameterNames)
+    }
+
+    #endregion
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','GetBoundPagingParameters')
+
+Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName GetBoundShouldProcessParameters -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param()
+    #region Return the should process parameters in a splattable hashtable.
+
+    $commandMetadata = $this.MyInvocation.MyCommand -as [System.Management.Automation.CommandMetadata]
+    if (-not $commandMetadata -or -not $commandMetadata.SupportsShouldProcess) {
+        # If should process is not supported for this command, return an empty hashtable.
+        @{}
+    } else {
+        # Otherwise, create a splattable hashtable containing all bound should process parameters.
+        $this.GetSplattableParameters(@('Confirm','WhatIf'))
+    }
+
+    #endregion
+}
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','GetBoundShouldProcessParameters')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSXH48STNu5y91Y8/EcBCy3IX
-# LzigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUOrpCMV1NSeeH/pxfONbCyvHP
+# 5lSgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -160,23 +313,23 @@ $script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCcH
-# 5HDSRMYqIFbX2KB9HUKjvh6QMA0GCSqGSIb3DQEBAQUABIIBAB44ovPASZ4mb+oU
-# y3mtH2dBab4JqsqmZXFwJfEO9jKO6/RGCdkbC4NT003aah2uzLFweEYZdyOcgtNz
-# 6WjCFYxj7WqOvS/VFcXVUdhn1JPLkpFfAe8VSs7SjiZ+HzP5ZpT72dGnAmiPpTcT
-# KLSfJ8zLDyd8uUNnF+W6cB/zDjWUsez1K5mLSzEgYv9Jr6GnqtZEBqZg/dpUotPz
-# XUg2tbpvTGMDLe8mIecAd4szBer+FuZHm/+uhm85el2HFtj0ziYeemu90EHJiJNh
-# 3djRZ/GSvOLK6T71W6ZceCzWUFqojFtTStGOWERFy1j0PYKZ2liJ6ivfXZME262J
-# QJodb6ChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPGR
+# ZRUvyTou3P/VCiHNGv9AETo4MA0GCSqGSIb3DQEBAQUABIIBABv95NWWb32Jhrin
+# DraNFIPMRVF5Ywya/vmF1ElWwGKjVwgt8u5UUdj4FmX8be1LVM400zAsmSIlQwJr
+# osAkbD1BOrxxDzOx6gF/pIxkdEz5HEKE4W//k9NvkTHMZTuwVuGCaxec7tDnxsrJ
+# 1NxqSKOtzMzT92FHQVkYyWW0M/kmm9nluhGI5d3b/i2fhoKu8IFwkyfRF4yyXeiP
+# XfvrFU6kAIH9sCqQGeC7oAb5c9wf8jKGgOGB9QetY27e+fqd6M2qrBMeDCRxxekX
+# M7Sv4reUWCuccQdtrAezdLlCnH2ZD5d8o7D+jXqvjjPC2rCac7MxsebydPd6ihQ9
+# dI984lShggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUQpFT
-# e36mc+I2Hc3jx5hLjxsL5M8wDQYJKoZIhvcNAQEBBQAEggEAEWc5htTwnEgyLv4P
-# Dw+UbmTk+6icZATaRH8XpB8BqjpnK9wfJr2TmayvZogYmscW/oNCmck08/EozP4y
-# o7X9gEPm23PIF1uskWitk4RruIm2/cnVZFc8Ykj53X3oHpiHqiePP2IxdwMWkrPU
-# i83jDzngUoOf6zm551tqvDNDhcuuEemDgPP2hXLhCNQkfkFPMCthe69qJaeeagj5
-# K19siXOKYYxw9c05BodKW0Etl7W15PXJpKTDLn+XMQvrtVoiQ5d1ScttjloqnLNN
-# n8iDxef+OIh6nTIibgx+ybiJNBz/RaNFh5HE+lIZku1rD7mTyghTYmFzk8kfSXnR
-# BK2Kww==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUQI3H
+# qjr+VF6yf+aYDaUL3ovL52QwDQYJKoZIhvcNAQEBBQAEggEAbJM0UTFXIsQC6XIT
+# G8zDpgmB2iKFsob29JvWvIz7fO2/oP40pi0QPtABssChQN6Mr8hVb6BpCSszhSgP
+# yk7Df9GMzUetur9xjJf3F/4Oe+cx4G+eQhy+XBL/nacJ024tdizgSx8avAyjdw+F
+# IJYifi3EK0ttKWQw+AJt2vR5mO5Y/5PEcVEbppVW5lZejw1kHm2htkRl3d6b9TrL
+# oGenfnQ14biDU+185ry8SM62FZlRGAjalnlAIdgfy6AfoLqbZNiHhjZlF1AcVLIj
+# etIwhuF2EHF88PubJ+R7O/HqkMnElXHaraHZtA9cCV2ALZF+FJrzl0fnfxfekWaY
+# zSoIMQ==
 # SIG # End signature block

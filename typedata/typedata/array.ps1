@@ -23,31 +23,111 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName Peek -Value {
+Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName ToString -Value {
     [System.Diagnostics.DebuggerHidden()]
     param()
-    try {
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($this)
-        [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-    } finally {
-        if ($bstr -ne $null) {
-            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    $ellipsis = ''
+    if ($this.Length -gt $FormatEnumerationLimit) {
+        $stringArray = $this[0..($FormatEnumerationLimit - 1)] -join ','
+        $ellipsis = '...'
+    } elseif ($this.Length -gt 0) {
+        $stringArray = $this[0..($this.Length - 1)] -join ','
+    } else {
+        $stringArray = ''
+    }
+    "{${stringArray}${ellipsis}}"
+}
+$script:TypeExtensions.AddArrayItem('System.Array','ToString')
+
+Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Compact -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param()
+    # The order of the comparison here is very important because @() -ne $null returns nothing.
+    ,($this.where({$null -ne $_}) -as $this.GetType())
+}
+$script:TypeExtensions.AddArrayItem('System.Array','Compact')
+
+Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Unique -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param()
+    $uniqueElements = New-Object -TypeName System.Collections.ArrayList
+    $this.foreach({if (-not $uniqueElements.Contains($_)) {[void]$uniqueElements.Add($_)}})
+    ,($uniqueElements -as $this.GetType())
+}
+$script:TypeExtensions.AddArrayItem('System.Array','Unique')
+
+Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Reverse -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param()
+    if ($this.Length -gt 0) {
+        ,($this[-1..-$this.Length] -as $this.GetType())
+    } else {
+        ,($this -as $this.GetType())
+    }
+}
+$script:TypeExtensions.AddArrayItem('System.Array','Reverse')
+
+Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Flatten -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [Parameter(Position=0)]
+        [ValidateNotNull()]
+        [ValidateRange(0,[System.Int32]::MaxValue)]
+        [System.Int32]
+        $Level
+    )
+    $flattenedArray = $this
+    if ($Level -gt 0) {
+        for ($index = 1; $index -le $Level; $index++) {
+            $flattenedArray = @($flattenedArray.foreach({$_}))
+        }
+    } else {
+        while ($flattenedArray.where({$_ -is [System.Array]})) {
+            $flattenedArray = @($flattenedArray.foreach({$_}))
+        }
+    }
+    ,($flattenedArray -as $this.GetType())
+}
+$script:TypeExtensions.AddArrayItem('System.Array','Flatten')
+
+Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Slice -Value {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNull()]
+        [ValidateRange(1,[System.Int32]::MaxValue)]
+        [System.Int32]
+        $Count
+    )
+    $chunk = New-Object -TypeName System.Collections.ArrayList
+    $firstReturn = $true
+    $this.foreach({
+        if ($chunk.Count -eq $Count) {
+            if ($firstReturn) {
+                $firstReturn = $false
+                ,,($chunk.ToArray() -as $this.GetType())
+            } else {
+                ,($chunk.ToArray() -as $this.GetType())
+            }
+            $chunk.Clear()
+        }
+        $chunk.Add($_) > $null
+    })
+    if ($chunk.Count) {
+        if ($firstReturn) {
+            $firstReturn = $false
+            ,,($chunk.ToArray() -as $this.GetType())
+        } else {
+            ,($chunk.ToArray() -as $this.GetType())
         }
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','Peek')
-
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
-    [System.Diagnostics.DebuggerHidden()]
-    param()
-    $this.Peek().GetMD5Hash()
-}
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
+$script:TypeExtensions.AddArrayItem('System.Array','Slice')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSXH48STNu5y91Y8/EcBCy3IX
-# LzigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUf3a2irbs4oBD+3vlzqHP5kyV
+# p5WgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -160,23 +240,23 @@ $script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCcH
-# 5HDSRMYqIFbX2KB9HUKjvh6QMA0GCSqGSIb3DQEBAQUABIIBAB44ovPASZ4mb+oU
-# y3mtH2dBab4JqsqmZXFwJfEO9jKO6/RGCdkbC4NT003aah2uzLFweEYZdyOcgtNz
-# 6WjCFYxj7WqOvS/VFcXVUdhn1JPLkpFfAe8VSs7SjiZ+HzP5ZpT72dGnAmiPpTcT
-# KLSfJ8zLDyd8uUNnF+W6cB/zDjWUsez1K5mLSzEgYv9Jr6GnqtZEBqZg/dpUotPz
-# XUg2tbpvTGMDLe8mIecAd4szBer+FuZHm/+uhm85el2HFtj0ziYeemu90EHJiJNh
-# 3djRZ/GSvOLK6T71W6ZceCzWUFqojFtTStGOWERFy1j0PYKZ2liJ6ivfXZME262J
-# QJodb6ChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIjL
+# asqors+s++/v3sOlArjrsB8/MA0GCSqGSIb3DQEBAQUABIIBADsV6G7Jdcb3Decr
+# L+uY65jFaoQjPVvB+F7J4XCHYB/0/ow9eTmy5dRwiKcRBCIMl54Zwc8Kwkdv02q7
+# zYFxye52qhFVmymTujMHdw8PmhYrEIXSLYejFw0XTZyaplAodIRiQNHEnhJa9ggo
+# Tzsa8jf+yoxwL1qApHGd12iLinDcZBsyNnOYebdic5J9MvBVfwFQ0oz5jO2jKd1W
+# wcB4DXzQr7KBKTdDsLyLlVwcTFUBwpkh6ICQS1lyJGVpav0jjNSWGe9cBIK64ye/
+# t3YRiATe4rdVdhjwc+Fc/7yvTZHjp2lAMmtEEy17C8c/zvphI9UNk1tHQgbjmcW+
+# CAxlAwyhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUQpFT
-# e36mc+I2Hc3jx5hLjxsL5M8wDQYJKoZIhvcNAQEBBQAEggEAEWc5htTwnEgyLv4P
-# Dw+UbmTk+6icZATaRH8XpB8BqjpnK9wfJr2TmayvZogYmscW/oNCmck08/EozP4y
-# o7X9gEPm23PIF1uskWitk4RruIm2/cnVZFc8Ykj53X3oHpiHqiePP2IxdwMWkrPU
-# i83jDzngUoOf6zm551tqvDNDhcuuEemDgPP2hXLhCNQkfkFPMCthe69qJaeeagj5
-# K19siXOKYYxw9c05BodKW0Etl7W15PXJpKTDLn+XMQvrtVoiQ5d1ScttjloqnLNN
-# n8iDxef+OIh6nTIibgx+ybiJNBz/RaNFh5HE+lIZku1rD7mTyghTYmFzk8kfSXnR
-# BK2Kww==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUvuP8
+# b1M3ZACf+rWOXR1Hq2iSaI0wDQYJKoZIhvcNAQEBBQAEggEARvmiz3FxUNGOvQDl
+# HlVgXWJVOzK43O8Lds1DNVoE/aZdKcHOcSng7nTZvjB6HsJWqUJhJGe/FrlQpnEM
+# oUgp+k8k254IAd5sS8ow1+MQdwtTCRiL2VdCwDOCQpOEeNkvccmDgD15hYkF85AU
+# ogyqJ5CPJfMgS36rNybmcw/J2h5g/Er2McNOHH4OPRZV99mSsGJY1ZWC1n9aFdYY
+# hOdGHxzXA2ewTo0IOutnwbJ5sGwyJHYHJ1IlnLbIenYoYW2x+ethU8TthjxXzrvY
+# sEfV0xUQ3kZ6IwS5wSD2uXQd6iGYlJCZFMMptqisepVmmT0YWSgsVW2gjrHQEi4x
+# ocgWXg==
 # SIG # End signature block

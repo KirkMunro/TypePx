@@ -23,31 +23,41 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName Peek -Value {
+Update-TypeData -Force -TypeName System.Management.Automation.PSModuleInfo -MemberType ScriptMethod -MemberName GetLocalStoragePath -Value {
     [System.Diagnostics.DebuggerHidden()]
-    param()
+    param(
+        # If true, returns the module local storage folder for the current user; otherwise, returns the folder for all users
+        [System.Boolean]
+        $CurrentUser = $false
+    )
     try {
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($this)
-        [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-    } finally {
-        if ($bstr -ne $null) {
-            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+        #region Determine where to look for module local storage.
+
+        if ($CurrentUser) {
+            $mlsRoot = $env:LocalAppData
+        } else {
+            # When working with All Users, we use the ProgramData folder instead of the All Users
+            # profile.
+            $mlsRoot = $env:ProgramData
         }
+
+        #endregion
+
+        #region Return the path based on the root folder and the module name.
+
+        "${mlsRoot}\WindowsPowerShell\Modules\$($this.Name)"
+
+        #endregion
+    } catch {
+        throw
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','Peek')
-
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
-    [System.Diagnostics.DebuggerHidden()]
-    param()
-    $this.Peek().GetMD5Hash()
-}
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
+$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSModuleInfo','GetLocalStoragePath')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSXH48STNu5y91Y8/EcBCy3IX
-# LzigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQURGBkPuUSgy2UgpYQXFyP8EKa
+# jFegghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -160,23 +170,23 @@ $script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCcH
-# 5HDSRMYqIFbX2KB9HUKjvh6QMA0GCSqGSIb3DQEBAQUABIIBAB44ovPASZ4mb+oU
-# y3mtH2dBab4JqsqmZXFwJfEO9jKO6/RGCdkbC4NT003aah2uzLFweEYZdyOcgtNz
-# 6WjCFYxj7WqOvS/VFcXVUdhn1JPLkpFfAe8VSs7SjiZ+HzP5ZpT72dGnAmiPpTcT
-# KLSfJ8zLDyd8uUNnF+W6cB/zDjWUsez1K5mLSzEgYv9Jr6GnqtZEBqZg/dpUotPz
-# XUg2tbpvTGMDLe8mIecAd4szBer+FuZHm/+uhm85el2HFtj0ziYeemu90EHJiJNh
-# 3djRZ/GSvOLK6T71W6ZceCzWUFqojFtTStGOWERFy1j0PYKZ2liJ6ivfXZME262J
-# QJodb6ChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFH+l
+# H7M9DC0BbcPtJ595+GZkx4KIMA0GCSqGSIb3DQEBAQUABIIBAE+1kipGFSQ8KlnG
+# PC7mYOp/gSxCAH39DW06fssh2JveOGi0jkT9w2P64QZqiGGZq+kQ7d/8SF0NNuNU
+# X/gCnEFeg8OwKrtQM2hT/QI1oCukTLEs/haB6ijNDoKYMA9B4UaJRCHm060H/fd4
+# aeiEq6PUNpMgnHd7H9TsYXVX5FyG2c6QU6OftPOntVtRpUpiJuquPTQ/Yvm/9Aig
+# gLSkJML7no4QnSueylArYWe/QtqmZsGpfkzPZb6qQwkR3usRZYAsdZMxyb1g2bFH
+# g6LdLPUBtmq4nK6KxFy7gVhkGdRPaZhDcFHheln445Qxr6SQXvHXOT1oFOS04SYd
+# I1dRYAKhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUQpFT
-# e36mc+I2Hc3jx5hLjxsL5M8wDQYJKoZIhvcNAQEBBQAEggEAEWc5htTwnEgyLv4P
-# Dw+UbmTk+6icZATaRH8XpB8BqjpnK9wfJr2TmayvZogYmscW/oNCmck08/EozP4y
-# o7X9gEPm23PIF1uskWitk4RruIm2/cnVZFc8Ykj53X3oHpiHqiePP2IxdwMWkrPU
-# i83jDzngUoOf6zm551tqvDNDhcuuEemDgPP2hXLhCNQkfkFPMCthe69qJaeeagj5
-# K19siXOKYYxw9c05BodKW0Etl7W15PXJpKTDLn+XMQvrtVoiQ5d1ScttjloqnLNN
-# n8iDxef+OIh6nTIibgx+ybiJNBz/RaNFh5HE+lIZku1rD7mTyghTYmFzk8kfSXnR
-# BK2Kww==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQU2qKD
+# DRTwWm3fQC/1JAFtaz3Z+MgwDQYJKoZIhvcNAQEBBQAEggEAoONg3Fi1oJ/se2+P
+# rhmB/uXAihof2QOAJJ3jrkeav1W5h+JkJjSwXjaatJqrJ6a7jzhBetSGPKqTBily
+# PdvS+SEHHkw6E0/KwDp9zwC3tC1WwO/Wa8VpSZ3ZFt7xiORjlH9cinQWhgTRRyOy
+# 8aP7zUfZWhn9Wy+2QZTUnc6yoDFv5PLS+lAJJzIA7+dXzITWSgmZlA4eki9lb/bF
+# iCZYZJOyeJLsyKvlq0/uZ1Z3M+nf7T1YDg9pDVyWCcfKUuqK/PPBH6zhRRZ6zpaP
+# CMc3YAZlj618UJtFmPk+9dzCLAIcANPiwmJD+EGwWoKsqAETBnHjXRLK4tCM6gTc
+# sQtT8Q==
 # SIG # End signature block

@@ -23,31 +23,31 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName Peek -Value {
+Update-TypeData -Force -TypeName System.Collections.Hashtable -MemberType ScriptMethod -MemberName AddArrayItem -Value {
     [System.Diagnostics.DebuggerHidden()]
-    param()
-    try {
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($this)
-        [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-    } finally {
-        if ($bstr -ne $null) {
-            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-        }
+    param(
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.Object]
+        $Key,
+
+        [Parameter(Position=1, Mandatory=$true)]
+        [AllowNull()]
+        [System.Array]
+        $Value
+    )
+    if (-not $this.ContainsKey($Key)) {
+        $this.Add($Key,$Value)
+    } else {
+        $this[$Key] += $Value
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','Peek')
-
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
-    [System.Diagnostics.DebuggerHidden()]
-    param()
-    $this.Peek().GetMD5Hash()
-}
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
+$script:TypeExtensions.AddArrayItem('System.Collections.Hashtable','AddArrayItem')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSXH48STNu5y91Y8/EcBCy3IX
-# LzigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU0jYrFmIaIhGCVI6tVYfEBUfD
+# e3qgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -160,23 +160,23 @@ $script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCcH
-# 5HDSRMYqIFbX2KB9HUKjvh6QMA0GCSqGSIb3DQEBAQUABIIBAB44ovPASZ4mb+oU
-# y3mtH2dBab4JqsqmZXFwJfEO9jKO6/RGCdkbC4NT003aah2uzLFweEYZdyOcgtNz
-# 6WjCFYxj7WqOvS/VFcXVUdhn1JPLkpFfAe8VSs7SjiZ+HzP5ZpT72dGnAmiPpTcT
-# KLSfJ8zLDyd8uUNnF+W6cB/zDjWUsez1K5mLSzEgYv9Jr6GnqtZEBqZg/dpUotPz
-# XUg2tbpvTGMDLe8mIecAd4szBer+FuZHm/+uhm85el2HFtj0ziYeemu90EHJiJNh
-# 3djRZ/GSvOLK6T71W6ZceCzWUFqojFtTStGOWERFy1j0PYKZ2liJ6ivfXZME262J
-# QJodb6ChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFFI8
+# TIeFveWR6V1P44aBXkRphiZmMA0GCSqGSIb3DQEBAQUABIIBAJOBKBx4ZyM5jrsc
+# jVrc+cAHTzU/sloDeO71P6lfXYw1VE8TTlUvOt373bnEXR1WWGeJR8BESfPR+2N1
+# BmYr+xrnH0hw8IZqXu/67OhrNYX6TBS0ZP7XwxphEZTbHvkHozdtbUhWO91RcITJ
+# clFGuVlgqrJKWtK3haVa4Eg9j8Ay7w+EHwOZndOmAEnPs8j3IjgER9nsg5CknqCh
+# ENoCwW16lhwWe1ljY2uwrdguB7+5p+2UVGfQbtndh5QreGuLWCzCSWDrojiN2uUU
+# 1qECw/xHRPtETE711MXovvtybbXFfDXmT+HaRUaCVMiS+wH6C2E3wqMeFGLjs5Q+
+# BbL/6eGhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUQpFT
-# e36mc+I2Hc3jx5hLjxsL5M8wDQYJKoZIhvcNAQEBBQAEggEAEWc5htTwnEgyLv4P
-# Dw+UbmTk+6icZATaRH8XpB8BqjpnK9wfJr2TmayvZogYmscW/oNCmck08/EozP4y
-# o7X9gEPm23PIF1uskWitk4RruIm2/cnVZFc8Ykj53X3oHpiHqiePP2IxdwMWkrPU
-# i83jDzngUoOf6zm551tqvDNDhcuuEemDgPP2hXLhCNQkfkFPMCthe69qJaeeagj5
-# K19siXOKYYxw9c05BodKW0Etl7W15PXJpKTDLn+XMQvrtVoiQ5d1ScttjloqnLNN
-# n8iDxef+OIh6nTIibgx+ybiJNBz/RaNFh5HE+lIZku1rD7mTyghTYmFzk8kfSXnR
-# BK2Kww==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUZSN1
+# a+SoQGezpEyI7RmqxN7PpwgwDQYJKoZIhvcNAQEBBQAEggEAgTTkxi2zf7oATpVJ
+# 8NWyQapeZS5vYeAYQazTB2wR/5kDZ9AEpfdKiX3+m16aGq5OGfmCrF+UabAm+h9J
+# DOnAwbOLSdEGlfMicwTAxodIsvYGQZbEJJ5i+iXzaQjtRWRJoIAa7ZcVTCW4gdll
+# dD9U9Yv2ynsjhcDbCuCcsXWIZOXZiU0SU7rVokVZl/VSDqH7mA1WoUpU29634yBJ
+# Az+wTPJpE9oMI1qj2wX8DgUupcy0JLAPERzNew4KATMX0gCZ/qGNxaxTY3e3+A77
+# g9gfpgOLbKYKTbPR2WiQjBFogURJI13OtIOSQevbJeV7Dt/vqVtuMf0rivKLVJla
+# Zw1lDA==
 # SIG # End signature block

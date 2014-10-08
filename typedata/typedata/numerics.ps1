@@ -23,31 +23,118 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName Peek -Value {
-    [System.Diagnostics.DebuggerHidden()]
-    param()
+$numericTypes = @(
+    [System.SByte]
+    [System.Int16]
+    [System.Int32]
+    [System.Int64]
+    [System.Byte]
+    [System.UInt16]
+    [System.UInt32]
+    [System.UInt64]
+)
+
+$timespanPropertyScriptBlock = @'
     try {
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($this)
-        [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-    } finally {
-        if ($bstr -ne $null) {
-            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+        `$propertyName = '${PropertyName}'
+        `$minValue = ${MinValue}
+        `$maxValue = ${MaxValue}
+        if (`$this -lt `$minValue) {
+            `$message = . {
+                [CmdletBinding()]
+                param()
+                `$PSCmdlet.GetResourceString('Metadata','ValidateRangeSmallerThanMinRangeFailure') -f `$propertyName,`$minValue
+            }
+            `$exception = New-Object -TypeName System.ArgumentException -ArgumentList `$message
+            `$errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList `$exception,`$exception.GetType().Name,'InvalidArgument',`$this
+            throw `$errorRecord
+        }
+        if (`$this -gt `$maxValue) {
+            `$message = . {
+                [CmdletBinding()]
+                param()
+                `$PSCmdlet.GetResourceString('Metadata','ValidateRangeGreaterThanMaxRangeFailure') -f `$propertyName,`$maxValue
+            }
+            `$exception = New-Object -TypeName System.ArgumentException -ArgumentList `$message
+            `$errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList `$exception,`$exception.GetType().Name,'InvalidArgument',`$this
+            throw `$errorRecord
+        }
+        `$argumentList = @(0,0,0,0,0)
+        if (`$propertyName -eq 'Weeks') {
+            `$argumentList[0] = `$this * 7
+        } else {
+            `$argumentIndex = @('Days','Hours','Minutes','Seconds','Milliseconds').IndexOf(`$propertyName)
+            `$argumentList[`$argumentIndex] = `$this
+        }
+        New-Object -TypeName System.TimeSpan -ArgumentList `$argumentList
+    } catch {
+        if (`$ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+            `$PSCmdlet.ThrowTerminatingError(`$_)
+        } else {
+            throw
         }
     }
-}
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','Peek')
+'@
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
-    [System.Diagnostics.DebuggerHidden()]
-    param()
-    $this.Peek().GetMD5Hash()
+
+foreach ($type in $numericTypes) {
+    Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptMethod -MemberName Times -Value {
+        [System.Diagnostics.DebuggerStepThrough()]
+        param(
+            [Parameter(Position=0, Mandatory=$true)]
+            [ValidateNotNull()]
+            [System.Management.Automation.ScriptBlock]
+            $ScriptBlock
+        )
+        try {
+            if ($this -lt 1) {
+                $message = . {
+                    [CmdletBinding()]
+                    param()
+                    $PSCmdlet.GetResourceString('Metadata','ValidateRangeSmallerThanMinRangeFailure') -f $this,1
+                }
+                $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
+                $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception,$exception.GetType().Name,'InvalidArgument',$this
+                throw $errorRecord
+            }
+            # This logic properly invokes the script block using lexical scoping in PowerShell 2, but
+            # in PowerShell 4 it does not work that way. Wish I knew how to change that behaviour.
+            (1..$this).foreach($ScriptBlock)
+        } catch {
+            if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+                $PSCmdlet.ThrowTerminatingError($_)
+            } else {
+                throw
+            }
+        }
+    }
+    $script:TypeExtensions.AddArrayItem($type.FullName,'Times')
+
+    $propertyName = 'Weeks'
+    $minValue = [System.Math]::Truncate([System.TimeSpan]::MinValue.TotalDays/7)
+    $maxValue = [System.Math]::Truncate([System.TimeSpan]::MaxValue.TotalDays/7)
+    $propertyValue = $ExecutionContext.InvokeCommand.NewScriptBlock($timespanPropertyScriptBlock.Expand())
+    Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptProperty -MemberName $propertyName -Value $propertyValue
+    $script:TypeExtensions.AddArrayItem($type.FullName,'Weeks')
+
+    foreach ($propertyName in 'Days','Hours','Minutes','Seconds','Milliseconds') {
+        $minValue = [System.Math]::Truncate([System.TimeSpan]::MinValue."Total${propertyName}")
+        $maxValue = [System.Math]::Truncate([System.TimeSpan]::MaxValue."Total${propertyName}")
+        $propertyValue = $ExecutionContext.InvokeCommand.NewScriptBlock($timespanPropertyScriptBlock.Expand())
+        Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptProperty -MemberName $propertyName -Value $propertyValue
+        $script:TypeExtensions.AddArrayItem($type.FullName,$propertyName)
+    }
+
+    foreach ($scriptPropertyIdentifier in @('Weeks','Days','Hours','Minutes','Seconds','Milliseconds')) {
+        Update-TypeData -Force -TypeName $type.FullName -MemberType AliasProperty -MemberName ($scriptPropertyIdentifier -replace 's$') -Value $scriptPropertyIdentifier
+    }
+    $script:TypeExtensions.AddArrayItem($type.FullName,@('Week','Day','Hour','Minute','Second','Millisecond'))
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSXH48STNu5y91Y8/EcBCy3IX
-# LzigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+xIxmcU/cpFDdb1jZvHcKT0F
+# CKmgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -160,23 +247,23 @@ $script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCcH
-# 5HDSRMYqIFbX2KB9HUKjvh6QMA0GCSqGSIb3DQEBAQUABIIBAB44ovPASZ4mb+oU
-# y3mtH2dBab4JqsqmZXFwJfEO9jKO6/RGCdkbC4NT003aah2uzLFweEYZdyOcgtNz
-# 6WjCFYxj7WqOvS/VFcXVUdhn1JPLkpFfAe8VSs7SjiZ+HzP5ZpT72dGnAmiPpTcT
-# KLSfJ8zLDyd8uUNnF+W6cB/zDjWUsez1K5mLSzEgYv9Jr6GnqtZEBqZg/dpUotPz
-# XUg2tbpvTGMDLe8mIecAd4szBer+FuZHm/+uhm85el2HFtj0ziYeemu90EHJiJNh
-# 3djRZ/GSvOLK6T71W6ZceCzWUFqojFtTStGOWERFy1j0PYKZ2liJ6ivfXZME262J
-# QJodb6ChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFJRZ
+# vXWlmtr38YtpsR9ufmZaWdpzMA0GCSqGSIb3DQEBAQUABIIBALeKbIsQhVqdxKCh
+# So4ilic+lasRGvP5ohp3e6p+lgxdX0MeBbQ8KAMwz2w8mzR+8A3IvgwXTOI1AQNq
+# 5yHrvqamFSf2ecUdAiK9GJ1LtaBZNMfyocQ/7p4HsQXkHlM4XvLNqjBa8cffSby/
+# 88R4hR1jHwreHQqZM1S86kwT+FnjagCHGcdpHgynwKEBZYic+17oE14BVGhssibD
+# Iau6gudOF+VKEsKAhtKEPwbuFAijHo68fVmaud5BHFgG66vPesU2S2S7I4phq7pS
+# XrBPkxiaBW9Hroa0seeWXt5chfi41J+RxlFGT7p3CDtJD6aWuqwjJfFOmS1G8xXl
+# CnEFlrWhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUQpFT
-# e36mc+I2Hc3jx5hLjxsL5M8wDQYJKoZIhvcNAQEBBQAEggEAEWc5htTwnEgyLv4P
-# Dw+UbmTk+6icZATaRH8XpB8BqjpnK9wfJr2TmayvZogYmscW/oNCmck08/EozP4y
-# o7X9gEPm23PIF1uskWitk4RruIm2/cnVZFc8Ykj53X3oHpiHqiePP2IxdwMWkrPU
-# i83jDzngUoOf6zm551tqvDNDhcuuEemDgPP2hXLhCNQkfkFPMCthe69qJaeeagj5
-# K19siXOKYYxw9c05BodKW0Etl7W15PXJpKTDLn+XMQvrtVoiQ5d1ScttjloqnLNN
-# n8iDxef+OIh6nTIibgx+ybiJNBz/RaNFh5HE+lIZku1rD7mTyghTYmFzk8kfSXnR
-# BK2Kww==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUnhFM
+# kQ0puoK8JLBItK/zVxPoA18wDQYJKoZIhvcNAQEBBQAEggEARMK7/CYkCOsuY8La
+# R7MOCidYudexhD04eu0q8XFkmzuA8YNOUGteBAy1x4E/IXoiseyzLCg33rrJLbGO
+# l5mYs7uaPmdI6JE1GSBosCIOtAtucT8E64f2skKGQhMwNGjnnBkWQHmmIWfDTzNc
+# 0YnujOva2frce2PSye+vYburP/R9zA57SEjBNd48A8S81KsrUUz1eWuReAALfTPH
+# nmRIN+RAC0Hrfs59wfSNzO3B3/CRYzVxou/OwSACSh9FTBTIwGlarlAcPkdh+ma6
+# XowIBt7m6t3iio1xkJndP9uYnQ3zJWkvjCM0IXfNtipRXcbyvZpFKTLdWUGc0fIi
+# lsHRNg==
 # SIG # End signature block

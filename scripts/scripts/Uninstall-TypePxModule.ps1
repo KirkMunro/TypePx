@@ -19,35 +19,67 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License in the
-license folder that is included in the DebugPx module. If not, see
+license folder that is included in the ScsmPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName Peek -Value {
-    [System.Diagnostics.DebuggerHidden()]
-    param()
-    try {
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($this)
-        [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-    } finally {
-        if ($bstr -ne $null) {
-            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+# This script should only be invoked when you want to uninstall TypePx.
+
+[CmdletBinding(SupportsShouldProcess=$true)]
+[OutputType([System.Void])]
+param(
+    [Parameter()]
+    [System.Management.Automation.SwitchParameter]
+    $RemovePersistentData
+)
+try {
+    #region Get the currently installed module (if there is one).
+
+    Write-Progress -Activity 'Uninstalling TypePx' -Status 'Looking for an installed TypePx module.'
+    $module = Get-Module -ListAvailable | Where-Object {$_.Guid -eq [System.Guid]'cacd8e78-b36a-4c37-90f8-9f8e2879abd6'}
+    if ($module -is [System.Array]) {
+        [System.String]$message = 'More than one version of TypePx is installed on this system. This is not supported. Manually remove the versions you are not using and then try again.'
+        [System.Management.Automation.SessionStateException]$exception = New-Object -TypeName System.Management.Automation.SessionStateException -ArgumentList $message
+        [System.Management.Automation.ErrorRecord]$errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception,'SessionStateException',([System.Management.Automation.ErrorCategory]::InvalidOperation),$module
+        throw $errorRecord
+    }
+
+    #endregion
+
+    #region Remove the module.
+
+    if ($module) {
+        Write-Progress -Activity 'Uninstalling TypePx' -Status 'Unloading and removing the installed TypePx module.'
+        # Unload the module if it is currently loaded.
+        if ($loadedModule = Get-Module | Where-Object {$_.Guid -eq $module.Guid}) {
+            $loadedModule | Remove-Module -ErrorAction Stop
+        }
+        # Remove the currently installed module.
+        Remove-Item -LiteralPath $module.ModuleBase -Recurse -Force -ErrorAction Stop
+    }
+
+    #endregion
+
+    #region Now remove the persistent data for the module if the caller requested it.
+
+    if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('RemovePersistentData') -and $RemovePersistentData) {
+        foreach ($mlsRoot in $env:LocalAppData,$env:ProgramData) {
+            $mlsPath = Join-Path -Path $mlsRoot -ChildPath "WindowsPowerShell\Modules\$($module.Name)"
+            if (Test-Path -LiteralPath $mlsPath) {
+                Remove-Item -LiteralPath $mlsPath -Recurse -Force -ErrorAction Stop
+            }
         }
     }
-}
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','Peek')
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
-    [System.Diagnostics.DebuggerHidden()]
-    param()
-    $this.Peek().GetMD5Hash()
+    #endregion
+} catch {
+    $PSCmdlet.ThrowTerminatingError($_)
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSXH48STNu5y91Y8/EcBCy3IX
-# LzigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU7ma+qDEHMbDvwEfuZR/cSOHB
+# 8W+gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -160,23 +192,23 @@ $script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCcH
-# 5HDSRMYqIFbX2KB9HUKjvh6QMA0GCSqGSIb3DQEBAQUABIIBAB44ovPASZ4mb+oU
-# y3mtH2dBab4JqsqmZXFwJfEO9jKO6/RGCdkbC4NT003aah2uzLFweEYZdyOcgtNz
-# 6WjCFYxj7WqOvS/VFcXVUdhn1JPLkpFfAe8VSs7SjiZ+HzP5ZpT72dGnAmiPpTcT
-# KLSfJ8zLDyd8uUNnF+W6cB/zDjWUsez1K5mLSzEgYv9Jr6GnqtZEBqZg/dpUotPz
-# XUg2tbpvTGMDLe8mIecAd4szBer+FuZHm/+uhm85el2HFtj0ziYeemu90EHJiJNh
-# 3djRZ/GSvOLK6T71W6ZceCzWUFqojFtTStGOWERFy1j0PYKZ2liJ6ivfXZME262J
-# QJodb6ChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPMJ
+# 3ewjzNwqwN7qacu/x6Yxak2OMA0GCSqGSIb3DQEBAQUABIIBADM3PLtVGwhuzWrx
+# 4txW7WmtbDL7cwpmqSoeTdLhxySZiksz/on9uneJqFeqX1xx6V9mDRXPO+z+zoJW
+# t5SVjHW+RQMuMrZuwDW2jTgYeb8qaAi6iBKqUtn0j0NGwjwiF4gDXWU0tz3BS2JR
+# /8LuSbnuX+cWw5NtLDLlkgO+zKui9QFVqbxCG8/X5OAMFECu8YTAGApJG6g66H+/
+# yeH4few9Rze2EJOqWAYNn5TMo3FJTkZCP1/TiXYjQ1G2ytceXLWEIGj4iJa4qbAh
+# FMTVCf08JzoIh/n5rGFcA8RZrB9+A9jUIoKBsiqItW0dgusPAT3WppqRrZvGvq5O
+# UERgtKKhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODI5WjAjBgkqhkiG9w0BCQQxFgQUQpFT
-# e36mc+I2Hc3jx5hLjxsL5M8wDQYJKoZIhvcNAQEBBQAEggEAEWc5htTwnEgyLv4P
-# Dw+UbmTk+6icZATaRH8XpB8BqjpnK9wfJr2TmayvZogYmscW/oNCmck08/EozP4y
-# o7X9gEPm23PIF1uskWitk4RruIm2/cnVZFc8Ykj53X3oHpiHqiePP2IxdwMWkrPU
-# i83jDzngUoOf6zm551tqvDNDhcuuEemDgPP2hXLhCNQkfkFPMCthe69qJaeeagj5
-# K19siXOKYYxw9c05BodKW0Etl7W15PXJpKTDLn+XMQvrtVoiQ5d1ScttjloqnLNN
-# n8iDxef+OIh6nTIibgx+ybiJNBz/RaNFh5HE+lIZku1rD7mTyghTYmFzk8kfSXnR
-# BK2Kww==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTMwODM1WjAjBgkqhkiG9w0BCQQxFgQUxgKZ
+# Wz2FYp6chBW9bciL7wGXg3EwDQYJKoZIhvcNAQEBBQAEggEAl3aBL7l6rUOKcBXS
+# IuKZ9n3JMeTzGfKF28m2NhTTLozKThAZgKiDPZZWBSyVT5zykL/WgZv+Ye12tmRL
+# +x+7/7BFkSVlx15TcqAjjg2wIh+VIQqWpNgNA8hQSpZAM/4g7V67gMGEhUqB5REs
+# e447/O1wAQAd8GAzDvnI0GGaz4KLvoqXGNHMqcFoz6obit/Wa2+/7YJt+8V6yR6k
+# 6uJDor2HbhTxDlMecIXJdFe25BbCo5U0hRFMw6kDmfHfqyCIuf8Zmcyq+XfbgE9T
+# BP3P3rRUoIl26UKu+epAt8MsnCbh5SAoprRdwqycSPCMkGyb8xVQUVWIvf2ngPJA
+# G8w1aw==
 # SIG # End signature block
