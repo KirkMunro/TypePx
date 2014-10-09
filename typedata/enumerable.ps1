@@ -23,7 +23,10 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-$ienumerableBaseTypes = @([System.Collections.ObjectModel.Collection`1[[System.Management.Automation.PSObject,System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]])
+$ienumerableBaseTypes = @(
+    [System.Collections.ObjectModel.Collection`1[System.Object]]
+    [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+)
 foreach ($assembly in [System.AppDomain]::CurrentDomain.GetAssemblies()) {
     foreach ($type in $assembly.GetTypes()) {
         if ($type -eq [System.String]) {
@@ -51,33 +54,38 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                 [System.Object]
                 $Object
             )
+            $results = @()
             if ($Object -is [System.Management.Automation.ScriptBlock]) {
                 # Process as if we used ForEach-Object
-                if ($result = $this | ForEach-Object -Process $Object) {
-                    ,$result
-                }
+                $results = $this | ForEach-Object -Process $Object
             } elseif ($Object -is [System.Type]) {
                 # Convert the items in the collection to the type specified
                 foreach ($item in $this) {
-                    $item -as $Object
+                    $results += $item -as $Object
                 }
             } elseif ($Object -is [System.String]) {
                 foreach ($item in $this) {
                     if ($member = $item.PSObject.Members[$Object -as [System.String]]) {
                         if ($member -is [System.Management.Automation.PSMethodInfo]) {
                             # Invoke the method on objects in the collection
-                            $member.Invoke($args)
+                            if ($result = $member.Invoke($args)) {
+                                $results += $result
+                            }
                         } elseif ($member -is [System.Management.Automation.PSPropertyInfo]) {
                             if ($args) {
                                 # Set the property on objects in the collection
                                 $member.Value = $args
                             } else {
                                 # Get the property on objects in the collection
-                                $member.Value
+                                $results += $member.Value
                             }
                         }
                     }
                 }
+            }
+            if ($results) {
+                $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                ,$results
             }
         }
         $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'foreach')
@@ -102,13 +110,14 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                 [System.Int32]
                 $NumberToReturn = 0
             )
+            $results = @()
             switch ($Mode) {
                 'First' {
                     # Return the first N objects matching the expression (default to 1)
                     if ($NumberToReturn -eq 0) {
                         $NumberToReturn = 1
                     }
-                    $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
                     break
                 }
                 'Last' {
@@ -116,7 +125,7 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                     if ($NumberToReturn -eq 0) {
                         $NumberToReturn = 1
                     }
-                    $this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn
+                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn
                     break
                 }
                 'SkipUntil' {
@@ -131,7 +140,7 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                         }
                         if ($outputCount -lt $NumberToReturn) {
                             $outputCount++
-                            $item
+                            $results += $item
                         }
                         if ($outputCount -eq $NumberToReturn) {
                             break
@@ -151,7 +160,7 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                         }
                         if ($outputCount -lt $NumberToReturn) {
                             $outputCount++
-                            $item
+                            $results += $item
                         }
                         if ($outputCount -eq $NumberToReturn) {
                             break
@@ -174,19 +183,24 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                             $collection1 += $item
                         }
                     }
-                    ,$collection0
-                    ,$collection1
+                    $collection0 = $collection0 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                    $collection1 = $collection1 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                    $results = @($collection0,$collection1)
                     break
                 }
                 default {
                     # Filter using the expression, to a maximum count if one was provided (default to all)
                     if ($NumberToReturn -eq 0) {
-                        $this | Where-Object -FilterScript $Expression
+                        $results = $this | Where-Object -FilterScript $Expression
                     } else {
-                        $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                        $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
                     }
                     break
                 }
+            }
+            if ($results) {
+                $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                ,$results
             }
         }
         $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'where')
@@ -273,8 +287,8 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUgq+w6y7pV591CziElzo7+lZ5
-# 76qgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUMxx+3UfQaMWSprziXfMRI0oF
+# yVegghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -387,23 +401,23 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFEMA
-# pIVToyXYCFCzupQ13KEh69ayMA0GCSqGSIb3DQEBAQUABIIBAJ0dhyZzy018DRcb
-# kYvF5VWZb8u+Zw9CpPuOfyaphIKczOs74xmApMLDU9l8qP90oJXUAn6HtKJ7H3tn
-# l6cjGxAodP+3Mpjvlczi7JdWPU2fIhnl+BhlOeOE+zyQ0UgJHwer2YSV28l1ka84
-# 4prcYk3peocTwnYnYr5H+jwwLmZnyS05FGUssX7GXz3Q1q2eB/ER9K20SsrYT/Re
-# Uk6eR8L7ZWPD//8oE9bkGJggzZj4KoSk8qIqklOLaM3n53XoCuBT90YRy+tL44fb
-# Cbxhcm4c3V+9NcFXYJCMrd3Pj6TLEJG9oJP14FMoqbGxB3Q5CwgB1xkhjGO72aZq
-# DVaOdyuhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFNfT
+# msjB2bhp5fGlrEjkoseN5Qy+MA0GCSqGSIb3DQEBAQUABIIBAD/UzF4nJCKuoO5k
+# qsCKSXBQZDu8Yy418/HjOHKzQ75HTkPS2Uk/9pagG/OJuc+3t59vgYMYcvX9PRhZ
+# dxHhzAA5LAZHlvoJt1RjJ2dD8o/D1IP0VI2GA1P0Xv1KgXDwqmfEmWU1er1fGuzW
+# wW4fTNln8RSkM0dz0vkO9BYwJxVmbuASOcjJOuoexuBE5KH1RFiytWt0DMHULUGv
+# q/+zIOgMWWnaP7DLE874RSCNm5GVaDA5od1T/ZVE7apLlc+WVWXgtfefvwnqDOGo
+# cLfAHoEtVK3Tib0L/AxzUV1Z8SkZTcY6NvxndCBMKGJC9dRLcYJBqFtdMP8erUNT
+# h9Eqg42hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MDAwNzIzWjAjBgkqhkiG9w0BCQQxFgQUEzmF
-# HWvx6MqxBnKanA97jjOxA5gwDQYJKoZIhvcNAQEBBQAEggEAbF7bBwAqJZhIas9f
-# SkNCtHwN3tA2pOtcvwbK8wsimHxhsgA1RZfkAiY1EYMDnwidDnIAv07PLYnXqVI3
-# 0zMRqEa4OIM2Hnj+pQgkWJI32+A74UX17RgU4YVaQiziwtdFUQp5Zegwke1NJATx
-# x9fPaiMCzkifCVV1+eBWPiV3dQmOrUg3zNUUJqbQS2RkIkCpe0APNjA9DgACylOh
-# BHFaYLVc9NCWlzolpqGP3UtacKVuPtf6Hbv8SXgHk3bVxcY8KOP+5juOPecIE07x
-# kqHSBZqd5AWL46cOr5KBr/TuwhP2T+0psDvPZ/ad09i1ngOcxWw3E9lqoVreMdjw
-# eUti9A==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMxWjAjBgkqhkiG9w0BCQQxFgQUg0f4
+# bZnWI8BZ5wmLm1bnp8tyXNgwDQYJKoZIhvcNAQEBBQAEggEAk64nm2a8DonlVt0f
+# cWZWprsH+0Zs9vZwIrC2beks+pueuEOm+CftdJwZTQwx7Yue/65+2Kyeutt2ynU/
+# LysHEMIK2LUvSZ4n+zVZRMxHkyHqY157N7vS/9KytJFgHe94E1WrLSxINcdgvXji
+# p7403hYnGoLbo6E69EBHmisw95jJeVM5RoK2otfZVnFbHfouZK9xaMTSXLvpxlP3
+# /Wc5MmduBtU+Glct4mLdeL3nNmfZtFG4fywhDw7gfvFmd8NptTNKPr5kMSQhSytl
+# mwlhvXkV7URla9C2U3EjqsJ/ZezjGTxxVij42phBLNSut2ovdO9yO1CNBRVfDQ12
+# IFIbZw==
 # SIG # End signature block

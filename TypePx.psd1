@@ -26,7 +26,7 @@ license folder that is included in the ScsmPx module. If not, see
 @{
       ModuleToProcess = 'TypePx.psm1'
 
-        ModuleVersion = '2.0.0.9'
+        ModuleVersion = '2.0.0.10'
 
                  GUID = 'cacd8e78-b36a-4c37-90f8-9f8e2879abd6'
 
@@ -81,12 +81,26 @@ license folder that is included in the ScsmPx module. If not, see
                         'typedata\string.ps1'
                         'license\gpl-3.0.txt'
                         )
+
+          PrivateData = @{
+                            PSData = @{
+                                Tags = 'type accelerator extended system ets extensions add-member update-typedata ps1xml'
+                                LicenseUri = 'http://www.gnu.org/licenses/gpl-3.0.html'
+                                ProjectUri = 'https://github.com/KirkMunro/TypePx'
+                                IconUri = ''
+                                ReleaseNotes = @'
+- Using a type extension that is defined in this module will not result in the module being auto-loaded because auto-loading only works for commands. If you use this module regularly, you should add the following command to your profile:
+Import-Module TypePx
+- This module used to be called TypeAccelerator. In order to use this module in an environment where the TypeAccelerator module is installed, you should first uninstall (remove from disk) the TypeAccelerator module.
+'@
+                            }
+                        }
 }
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU7ytPkbznABPTtnR452+pHfs/
-# +TugghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUcy44SIqG/upDwSOY3JMp1R3P
+# 5SCgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -199,23 +213,23 @@ license folder that is included in the ScsmPx module. If not, see
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFO3H
-# Th1rLgGJu+frdnDvZq0c/03ZMA0GCSqGSIb3DQEBAQUABIIBAFmA42vbgR+q6ldN
-# d1dQoyOGKtv7NXYHflsIVfu6HG8HsMxKHFxvynHkzx4ZWlMwBRIm1oeYyU8C/h5g
-# K78R9iLBOZzweUFOnmgg8gnLVwGsL+EfxJ34VtMsQSYTT/KrM7Q52Rf0b5clFgPm
-# qMQ7t3m5gepl5cOtNKsDc+fOFvLc4zl7axKI2UhCvSFC506i2Yqxvyu84Tk42Hb9
-# SDXVoacZN50L5WLP4AoFq1D764ySSpFSiC1Kmm55rXd8m1fZB2mjbyX6ICZyzluT
-# 4xaJ/3r5vWPxEn+YYkq4pHOsfrqe15tKPHQp1qUidNnikzKrfQqhZRzhv8jYSOAy
-# nMZ30qChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIRA
+# g7o/xed8uD4IbXH/MfU1nPpUMA0GCSqGSIb3DQEBAQUABIIBABElDjw60KWa46v5
+# 2/fNbhcT7yoS8qmOGWo0gVSxOKrJaHHiV5kFler27pwnrBSQAdTDABTMs6vnhtkB
+# hzShGW5tD6cu4NNRJXSk7ypJgV0Rac/jIzsAYj9v81Un7MoS0LknGsdI2SYnG6RX
+# 5vWgoWYBiUBl7tXz6NJKlmJB33yjQM/qfx6CCF5iM8zK1+q9dgS1HTcnqClE3HjN
+# WEaSiYawRFy+G/wdBEUJ58vOV1EX2FhZWbsxPad0UsErzUJsW8cMfBM4n8E+dED1
+# 3bCtA+Nxs7xLEobLLReg3zTgn+HNzgjIEsR1omzGdrS/CXp7NtUBi+9TBkoLQkHg
+# IeTSBS2hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MDAwNzIyWjAjBgkqhkiG9w0BCQQxFgQUUFuN
-# oxf+Rrj4GcODrWSpns93rYAwDQYJKoZIhvcNAQEBBQAEggEAEPgXPUbOtzC/bNKg
-# RWcU/6ZOCCyqmb2vhhtgPU25ybST4UsbBCRghZHiSuRf+LZsHhYxWmXEs8NTGEl6
-# IXa6eDOvEXr0YncJH4Mu0Hz876b0WqE1A12SDgKwSmxFxmvJGMnqqGrYERc39Qch
-# sSYAVEgZtqjbgMLQVOvF10UcwKIJWfTJ5Jp2b4aBox7DLgTey+XjbqslY50ztkzW
-# Al2QxXqmnr19J7uvmPU8DEa438DrRW9qCWN42QPrzgOBvcti+xCUuhUMqmP4X1hy
-# 44Zvze7FuQj5wUDSmipHvB4bcagYUyDf2wPv27Gx07WxPRzU/1Y0jK8eD1xm71Xx
-# fBF/uA==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMwWjAjBgkqhkiG9w0BCQQxFgQUt1Rd
+# YRMpTuoBC3ip0U+RwJhPpk4wDQYJKoZIhvcNAQEBBQAEggEALbKQWhw0DnFD4yPP
+# o1ZP/7N5r3aM7CT6RfGNE8eQsTGsTyPlo2MpEE3QMzfi4hDG+5BIVUfYSeo4C8Eq
+# G3yAMzt6pFBAiqF2C1zbduJosbZIcmKt+RXwbIBbSULUUZecnaJPID7D1cZOwsyQ
+# UOp17k1bec67sk7L1V9uZjlyK7cU2HcNdh7difxx9G8Dmikyc3lEcCDjeNQInPEq
+# ey9coayPDgtl1et+u6MsEy5F9Gm/LUxFCKfvMmDqnfygI6oOQYvfrC8jqTAaVwaH
+# p1ZkotSyKgxJPtEo86dtLSISeet6CFwrPFrRz3CL4ZptwhYWT+pcbDCkxBMOogQZ
+# tkJzzw==
 # SIG # End signature block
