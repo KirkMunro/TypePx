@@ -23,7 +23,10 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-$ienumerableBaseTypes = @([System.Collections.ObjectModel.Collection`1[[System.Management.Automation.PSObject,System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]])
+$ienumerableBaseTypes = @(
+    [System.Collections.ObjectModel.Collection`1[System.Object]]
+    [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+)
 foreach ($assembly in [System.AppDomain]::CurrentDomain.GetAssemblies()) {
     foreach ($type in $assembly.GetTypes()) {
         if ($type -eq [System.String]) {
@@ -51,33 +54,38 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                 [System.Object]
                 $Object
             )
+            $results = @()
             if ($Object -is [System.Management.Automation.ScriptBlock]) {
                 # Process as if we used ForEach-Object
-                if ($result = $this | ForEach-Object -Process $Object) {
-                    ,$result
-                }
+                $results = $this | ForEach-Object -Process $Object
             } elseif ($Object -is [System.Type]) {
                 # Convert the items in the collection to the type specified
                 foreach ($item in $this) {
-                    $item -as $Object
+                    $results += $item -as $Object
                 }
             } elseif ($Object -is [System.String]) {
                 foreach ($item in $this) {
                     if ($member = $item.PSObject.Members[$Object -as [System.String]]) {
                         if ($member -is [System.Management.Automation.PSMethodInfo]) {
                             # Invoke the method on objects in the collection
-                            $member.Invoke($args)
+                            if ($result = $member.Invoke($args)) {
+                                $results += $result
+                            }
                         } elseif ($member -is [System.Management.Automation.PSPropertyInfo]) {
                             if ($args) {
                                 # Set the property on objects in the collection
                                 $member.Value = $args
                             } else {
                                 # Get the property on objects in the collection
-                                $member.Value
+                                $results += $member.Value
                             }
                         }
                     }
                 }
+            }
+            if ($results) {
+                $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                ,$results
             }
         }
         $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'foreach')
@@ -102,13 +110,14 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                 [System.Int32]
                 $NumberToReturn = 0
             )
+            $results = @()
             switch ($Mode) {
                 'First' {
                     # Return the first N objects matching the expression (default to 1)
                     if ($NumberToReturn -eq 0) {
                         $NumberToReturn = 1
                     }
-                    $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
                     break
                 }
                 'Last' {
@@ -116,7 +125,7 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                     if ($NumberToReturn -eq 0) {
                         $NumberToReturn = 1
                     }
-                    $this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn
+                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn
                     break
                 }
                 'SkipUntil' {
@@ -131,7 +140,7 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                         }
                         if ($outputCount -lt $NumberToReturn) {
                             $outputCount++
-                            $item
+                            $results += $item
                         }
                         if ($outputCount -eq $NumberToReturn) {
                             break
@@ -151,7 +160,7 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                         }
                         if ($outputCount -lt $NumberToReturn) {
                             $outputCount++
-                            $item
+                            $results += $item
                         }
                         if ($outputCount -eq $NumberToReturn) {
                             break
@@ -174,19 +183,24 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
                             $collection1 += $item
                         }
                     }
-                    ,$collection0
-                    ,$collection1
+                    $collection0 = $collection0 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                    $collection1 = $collection1 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                    $results = @($collection0,$collection1)
                     break
                 }
                 default {
                     # Filter using the expression, to a maximum count if one was provided (default to all)
                     if ($NumberToReturn -eq 0) {
-                        $this | Where-Object -FilterScript $Expression
+                        $results = $this | Where-Object -FilterScript $Expression
                     } else {
-                        $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                        $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
                     }
                     break
                 }
+            }
+            if ($results) {
+                $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                ,$results
             }
         }
         $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'where')
