@@ -81,4 +81,18 @@ license folder that is included in the ScsmPx module. If not, see
                         'typedata\string.ps1'
                         'license\gpl-3.0.txt'
                         )
+
+          PrivateData = @{
+                            PSData = @{
+                                Tags = 'type accelerator extended system ets extensions add-member update-typedata ps1xml'
+                                LicenseUri = 'http://www.gnu.org/licenses/gpl-3.0.html'
+                                ProjectUri = 'https://github.com/KirkMunro/TypePx'
+                                IconUri = ''
+                                ReleaseNotes = @'
+- Using a type extension that is defined in this module will not result in the module being auto-loaded because auto-loading only works for commands. If you use this module regularly, you should add the following command to your profile:
+Import-Module TypePx
+- This module used to be called TypeAccelerator. In order to use this module in an environment where the TypeAccelerator module is installed, you should first uninstall (remove from disk) the TypeAccelerator module.
+'@
+                            }
+                        }
 }
