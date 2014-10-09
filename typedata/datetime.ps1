@@ -23,9 +23,31 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName FromNow -Value {(Get-Date).Add($this)     }
-Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName Ago     -Value {(Get-Date).Subtract($this)}
+Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName FromNow -Value {
+    if (($this.PSTypeNames -contains 'System.TimeSpan#Years') -and
+        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+        (Get-Date).AddYears($this.TotalYears)
+    } elseif (($this.PSTypeNames -contains 'System.TimeSpan#Months') -and
+        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+        (Get-Date).AddMonths($this.TotalMonths)
+    } else {
+        (Get-Date).Add($this)
+    }
+}
+Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName Ago -Value {
+    if (($this.PSTypeNames -contains 'System.TimeSpan#Years') -and
+        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+        (Get-Date).AddYears(-$this.TotalYears)
+    } elseif (($this.PSTypeNames -contains 'System.TimeSpan#Months') -and
+        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+        (Get-Date).AddMonths(-$this.TotalMonths)
+    } else {
+        (Get-Date).Subtract($this)
+    }
+}
 $script:TypeExtensions.AddArrayItem('System.TimeSpan',@('FromNow','Ago'))
 
-Update-TypeData -Force -TypeName System.DateTime -MemberType ScriptProperty -MemberName InUtc   -Value {$this.ToUniversalTime()   }
+Update-TypeData -Force -TypeName System.DateTime -MemberType ScriptProperty -MemberName InUtc -Value {
+    $this.ToUniversalTime()
+}
 $script:TypeExtensions.AddArrayItem('System.DateTime','InUtc')

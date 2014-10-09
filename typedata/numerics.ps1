@@ -32,6 +32,8 @@ $numericTypes = @(
     [System.UInt16]
     [System.UInt32]
     [System.UInt64]
+    [System.Single]
+    [System.Double]
 )
 
 $timespanPropertyScriptBlock = @'
@@ -59,14 +61,51 @@ $timespanPropertyScriptBlock = @'
             `$errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList `$exception,`$exception.GetType().Name,'InvalidArgument',`$this
             throw `$errorRecord
         }
-        `$argumentList = @(0,0,0,0,0)
-        if (`$propertyName -eq 'Weeks') {
-            `$argumentList[0] = `$this * 7
-        } else {
-            `$argumentIndex = @('Days','Hours','Minutes','Seconds','Milliseconds').IndexOf(`$propertyName)
-            `$argumentList[`$argumentIndex] = `$this
+        switch (`$propertyName) {
+            'Years' {
+                `$now = Get-Date
+                if (`$this -ge 0) {
+                    `$timeSpan = `$now.AddYears(`$this) - `$now
+                } else {
+                    `$timeSpan = `$now - `$now.AddYears(`$this)
+                }
+                `$timeSpan.PSTypeNames.Insert(0,'System.TimeSpan#Years')
+                Add-Member -InputObject `$timeSpan -Name TotalYears -MemberType NoteProperty -Value `$this -PassThru
+                break
+            }
+            'Months' {
+                `$now = Get-Date
+                if (`$this -ge 0) {
+                    `$timeSpan = `$now.AddMonths(`$this) - `$now
+                } else {
+                    `$timeSpan = `$now - `$now.AddMonths(`$this)
+                }
+                `$timeSpan.PSTypeNames.Insert(0,'System.TimeSpan#Months')
+                Add-Member -InputObject `$timeSpan -Name TotalMonths -MemberType NoteProperty -Value `$this -PassThru
+                break
+            }
+            default {
+                if (`$propertyName -eq 'Weeks') {
+                    `$argumentIndex = 0
+                    `$value = `$this * 7
+                } else {
+                    `$argumentIndex = @('Days','Hours','Minutes','Seconds','Milliseconds').IndexOf(`$propertyName)
+                    `$value = `$this
+                }
+                `$argumentList = @(0,0,0,0,0)
+                `$argumentMax = @(-1,24,60,60,1000)
+                `$argumentList[`$argumentIndex] = [System.Math]::Truncate(`$value)
+                `$remainder = `$value % 1
+                while ((`$remainder -gt 0) -and
+                       (`$argumentIndex -lt 4)) {
+                    `$argumentIndex++
+                    `$value = `$remainder * `$argumentMax[`$argumentIndex]
+                    `$argumentList[`$argumentIndex] = [System.Math]::Truncate(`$value)
+                    `$remainder = `$value % 1
+                }
+                New-Object -TypeName System.TimeSpan -ArgumentList `$argumentList
+            }
         }
-        New-Object -TypeName System.TimeSpan -ArgumentList `$argumentList
     } catch {
         if (`$ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
             `$PSCmdlet.ThrowTerminatingError(`$_)
@@ -76,39 +115,54 @@ $timespanPropertyScriptBlock = @'
     }
 '@
 
-
 foreach ($type in $numericTypes) {
-    Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptMethod -MemberName Times -Value {
-        [System.Diagnostics.DebuggerStepThrough()]
-        param(
-            [Parameter(Position=0, Mandatory=$true)]
-            [ValidateNotNull()]
-            [System.Management.Automation.ScriptBlock]
-            $ScriptBlock
-        )
-        try {
-            if ($this -lt 1) {
-                $message = . {
-                    [CmdletBinding()]
-                    param()
-                    $PSCmdlet.GetResourceString('Metadata','ValidateRangeSmallerThanMinRangeFailure') -f $this,1
+    if (@([System.Double],[System.Single]) -notcontains $type) {
+        Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptMethod -MemberName Times -Value {
+            [System.Diagnostics.DebuggerStepThrough()]
+            param(
+                [Parameter(Position=0, Mandatory=$true)]
+                [ValidateNotNull()]
+                [System.Management.Automation.ScriptBlock]
+                $ScriptBlock
+            )
+            try {
+                if ($this -lt 1) {
+                    $message = . {
+                        [CmdletBinding()]
+                        param()
+                        $PSCmdlet.GetResourceString('Metadata','ValidateRangeSmallerThanMinRangeFailure') -f $this,1
+                    }
+                    $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
+                    $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception,$exception.GetType().Name,'InvalidArgument',$this
+                    throw $errorRecord
                 }
-                $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
-                $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception,$exception.GetType().Name,'InvalidArgument',$this
-                throw $errorRecord
-            }
-            # This logic properly invokes the script block using lexical scoping in PowerShell 2, but
-            # in PowerShell 4 it does not work that way. Wish I knew how to change that behaviour.
-            (1..$this).foreach($ScriptBlock)
-        } catch {
-            if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
-                $PSCmdlet.ThrowTerminatingError($_)
-            } else {
-                throw
+                # This logic properly invokes the script block using lexical scoping in PowerShell 2, but
+                # in PowerShell 4 it does not work that way. Wish I knew how to change that behaviour.
+                (1..$this).foreach($ScriptBlock)
+            } catch {
+                if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+                    $PSCmdlet.ThrowTerminatingError($_)
+                } else {
+                    throw
+                }
             }
         }
+        $script:TypeExtensions.AddArrayItem($type.FullName,'Times')
+
+        $propertyName = 'Years'
+        $minValue = -10000
+        $maxValue = 10000
+        $propertyValue = $ExecutionContext.InvokeCommand.NewScriptBlock($timespanPropertyScriptBlock.Expand())
+        Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptProperty -MemberName $propertyName -Value $propertyValue
+        $script:TypeExtensions.AddArrayItem($type.FullName,'Years')
+
+        $propertyName = 'Months'
+        $minValue = -120000
+        $maxValue = 120000
+        $propertyValue = $ExecutionContext.InvokeCommand.NewScriptBlock($timespanPropertyScriptBlock.Expand())
+        Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptProperty -MemberName $propertyName -Value $propertyValue
+        $script:TypeExtensions.AddArrayItem($type.FullName,'Months')
     }
-    $script:TypeExtensions.AddArrayItem($type.FullName,'Times')
 
     $propertyName = 'Weeks'
     $minValue = [System.Math]::Truncate([System.TimeSpan]::MinValue.TotalDays/7)
@@ -125,8 +179,8 @@ foreach ($type in $numericTypes) {
         $script:TypeExtensions.AddArrayItem($type.FullName,$propertyName)
     }
 
-    foreach ($scriptPropertyIdentifier in @('Weeks','Days','Hours','Minutes','Seconds','Milliseconds')) {
+    foreach ($scriptPropertyIdentifier in @('Years','Months','Weeks','Days','Hours','Minutes','Seconds','Milliseconds')) {
         Update-TypeData -Force -TypeName $type.FullName -MemberType AliasProperty -MemberName ($scriptPropertyIdentifier -replace 's$') -Value $scriptPropertyIdentifier
     }
-    $script:TypeExtensions.AddArrayItem($type.FullName,@('Week','Day','Hour','Minute','Second','Millisecond'))
+    $script:TypeExtensions.AddArrayItem($type.FullName,@('Year','Month','Week','Day','Hour','Minute','Second','Millisecond'))
 }
