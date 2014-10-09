@@ -23,17 +23,39 @@ license folder that is included in the DebugPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName FromNow -Value {(Get-Date).Add($this)     }
-Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName Ago     -Value {(Get-Date).Subtract($this)}
+Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName FromNow -Value {
+    if (($this.PSTypeNames -contains 'System.TimeSpan#Years') -and
+        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+        (Get-Date).AddYears($this.TotalYears)
+    } elseif (($this.PSTypeNames -contains 'System.TimeSpan#Months') -and
+        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+        (Get-Date).AddMonths($this.TotalMonths)
+    } else {
+        (Get-Date).Add($this)
+    }
+}
+Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName Ago -Value {
+    if (($this.PSTypeNames -contains 'System.TimeSpan#Years') -and
+        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+        (Get-Date).AddYears(-$this.TotalYears)
+    } elseif (($this.PSTypeNames -contains 'System.TimeSpan#Months') -and
+        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+        (Get-Date).AddMonths(-$this.TotalMonths)
+    } else {
+        (Get-Date).Subtract($this)
+    }
+}
 $script:TypeExtensions.AddArrayItem('System.TimeSpan',@('FromNow','Ago'))
 
-Update-TypeData -Force -TypeName System.DateTime -MemberType ScriptProperty -MemberName InUtc   -Value {$this.ToUniversalTime()   }
+Update-TypeData -Force -TypeName System.DateTime -MemberType ScriptProperty -MemberName InUtc -Value {
+    $this.ToUniversalTime()
+}
 $script:TypeExtensions.AddArrayItem('System.DateTime','InUtc')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUQcFJntOwBOwrVTK4Pc56JFse
-# zNigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUmH1CmZKQNS5WE9DoqdxF/RBq
+# j2+gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -146,23 +168,23 @@ $script:TypeExtensions.AddArrayItem('System.DateTime','InUtc')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPgi
-# +k+f9yU5jV/TM/+02xbFIfpdMA0GCSqGSIb3DQEBAQUABIIBAEVqYCpLuK6yg2Mh
-# Qnrxg2RTvpZygJ5ybl+vvNmavIVkAu6WSNKAwVlRSJiMZhzM7j2N2NqSvcRYHUp7
-# gs1xuMNe1u7twOpvhBCwuSblX+XQfM6Wf7yDVy3s1BTDuHq6vBoetfPLdaJ0r8DR
-# QwKzATmjxvxy0Mt9GpdG8Il/vP5xhxPUBFYt9Xx5tkZf7dN0nBXKP7Ns53d+xh1k
-# rr7pxXDONOTYR25pQrAunhe9bTJ4HUKmJfTwnEGZ4KbN9k/mKteVHVMslJGMro5P
-# 61vmnsswhe6IaNcZsRRokVw2etuNhf2QsRUvwQ6W3bQ18JWtgX/ZBFyz5BtuXTSY
-# DnfKgeShggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFO9h
+# FeuTGZb41V/jbWBv7hl/2LB6MA0GCSqGSIb3DQEBAQUABIIBAIWRnpVQyyJp5xDh
+# lrquQcP9CXbYBiI5GRek0mjYymFWTZ40TxZM2d25cVD4kYO+wHE7Tink5kK38KwY
+# c9xMfA815d2YGCAn6ECp+Vei3sdlXZ2YAKrYq3QIZD7XfoFWXh5vh8C9LO+85N06
+# 3MS1SVFv7jl6JNwYBGlus0WW31JRfD315l7uxbzvTz7ATzi1ugXzVyjntSPMVa7A
+# rFrHpdkrQNTYCm2oA89LgtZZSgGZ8ZW96rSYpkwMYYrRjD3aHPxOr0IPC6yl/2RI
+# /c0uL3F1tWZ3g4SA9wJs9Q89+i/5XMfAfOA5UbrCB741FvXcIppPBjHFHXmn3KfA
+# g5BKMlehggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTQxOTUzWjAjBgkqhkiG9w0BCQQxFgQUW/6O
-# Ge1ebcSRPy61Z3t75YSeIV0wDQYJKoZIhvcNAQEBBQAEggEATAERwAw+I760zn+k
-# W0FfgayJvTZZsUQW1M7o2XPXOs4+3gzDt+7f+ZDLYxWDbwWR+rRcTRe49lq+Nc3i
-# 1plZdVVXqNBAu4L3Sqh3Ck3RncNX1V5ZdSJm48/YdUr0XrNt1/hx+PV0MYResbFp
-# MnQRJGR2wvjeE8VixAZ3JBCpF8M+Icg9QCPymxsNi6oyPMd0Sl8BDR3YsK5RgoU8
-# qwb9aVkFSHrh5ZnKUosDbtwNYZ0tQQ21QsrJSqInrVzyz8F6/6DjXrh3+XSwgQtv
-# F7O8qbmH38nspsu9h9oDuZ/FiZivv+MvecevzheFlYg67eXZe9QMNYQlr4FCjNeZ
-# /fncGw==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MDAwNzIzWjAjBgkqhkiG9w0BCQQxFgQUnqEC
+# SzXvNFUVgQjz05CaU0xj3JAwDQYJKoZIhvcNAQEBBQAEggEAgFtFX91GL57XsIVY
+# qXDXm1PkuSxDD3Wt7IvoeCxiNadHD/UZ7sj2zqMquAwWjNv9IdnIJQ2ktP2uGHRZ
+# p09oYUpVUSBx6C+iOXHGMbbN0eRO/nFRNbDQYo8JNnOVH4mif50fSpjgu1O914RS
+# JWyT+JtCGXsXiDyyCLyaO09qtxRRzX+znRL4OqSrixUM2hRTZwWdVVEkCkMh8jZD
+# RQc7nRD0t2Ep2tQBW/h48XfdEyskhGJzgTXSzUdNMU9G2yPMtE4zxQt8WtmOTQTD
+# yfdHatp59wesGuja25u+6E8GQCnFNi8iXw2fUt7rAqX8t0iM8PhsFE6zMyJNKPNN
+# 7w2PlA==
 # SIG # End signature block

@@ -32,6 +32,8 @@ $numericTypes = @(
     [System.UInt16]
     [System.UInt32]
     [System.UInt64]
+    [System.Single]
+    [System.Double]
 )
 
 $timespanPropertyScriptBlock = @'
@@ -59,14 +61,51 @@ $timespanPropertyScriptBlock = @'
             `$errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList `$exception,`$exception.GetType().Name,'InvalidArgument',`$this
             throw `$errorRecord
         }
-        `$argumentList = @(0,0,0,0,0)
-        if (`$propertyName -eq 'Weeks') {
-            `$argumentList[0] = `$this * 7
-        } else {
-            `$argumentIndex = @('Days','Hours','Minutes','Seconds','Milliseconds').IndexOf(`$propertyName)
-            `$argumentList[`$argumentIndex] = `$this
+        switch (`$propertyName) {
+            'Years' {
+                `$now = Get-Date
+                if (`$this -ge 0) {
+                    `$timeSpan = `$now.AddYears(`$this) - `$now
+                } else {
+                    `$timeSpan = `$now - `$now.AddYears(`$this)
+                }
+                `$timeSpan.PSTypeNames.Insert(0,'System.TimeSpan#Years')
+                Add-Member -InputObject `$timeSpan -Name TotalYears -MemberType NoteProperty -Value `$this -PassThru
+                break
+            }
+            'Months' {
+                `$now = Get-Date
+                if (`$this -ge 0) {
+                    `$timeSpan = `$now.AddMonths(`$this) - `$now
+                } else {
+                    `$timeSpan = `$now - `$now.AddMonths(`$this)
+                }
+                `$timeSpan.PSTypeNames.Insert(0,'System.TimeSpan#Months')
+                Add-Member -InputObject `$timeSpan -Name TotalMonths -MemberType NoteProperty -Value `$this -PassThru
+                break
+            }
+            default {
+                if (`$propertyName -eq 'Weeks') {
+                    `$argumentIndex = 0
+                    `$value = `$this * 7
+                } else {
+                    `$argumentIndex = @('Days','Hours','Minutes','Seconds','Milliseconds').IndexOf(`$propertyName)
+                    `$value = `$this
+                }
+                `$argumentList = @(0,0,0,0,0)
+                `$argumentMax = @(-1,24,60,60,1000)
+                `$argumentList[`$argumentIndex] = [System.Math]::Truncate(`$value)
+                `$remainder = `$value % 1
+                while ((`$remainder -gt 0) -and
+                       (`$argumentIndex -lt 4)) {
+                    `$argumentIndex++
+                    `$value = `$remainder * `$argumentMax[`$argumentIndex]
+                    `$argumentList[`$argumentIndex] = [System.Math]::Truncate(`$value)
+                    `$remainder = `$value % 1
+                }
+                New-Object -TypeName System.TimeSpan -ArgumentList `$argumentList
+            }
         }
-        New-Object -TypeName System.TimeSpan -ArgumentList `$argumentList
     } catch {
         if (`$ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
             `$PSCmdlet.ThrowTerminatingError(`$_)
@@ -76,39 +115,54 @@ $timespanPropertyScriptBlock = @'
     }
 '@
 
-
 foreach ($type in $numericTypes) {
-    Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptMethod -MemberName Times -Value {
-        [System.Diagnostics.DebuggerStepThrough()]
-        param(
-            [Parameter(Position=0, Mandatory=$true)]
-            [ValidateNotNull()]
-            [System.Management.Automation.ScriptBlock]
-            $ScriptBlock
-        )
-        try {
-            if ($this -lt 1) {
-                $message = . {
-                    [CmdletBinding()]
-                    param()
-                    $PSCmdlet.GetResourceString('Metadata','ValidateRangeSmallerThanMinRangeFailure') -f $this,1
+    if (@([System.Double],[System.Single]) -notcontains $type) {
+        Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptMethod -MemberName Times -Value {
+            [System.Diagnostics.DebuggerStepThrough()]
+            param(
+                [Parameter(Position=0, Mandatory=$true)]
+                [ValidateNotNull()]
+                [System.Management.Automation.ScriptBlock]
+                $ScriptBlock
+            )
+            try {
+                if ($this -lt 1) {
+                    $message = . {
+                        [CmdletBinding()]
+                        param()
+                        $PSCmdlet.GetResourceString('Metadata','ValidateRangeSmallerThanMinRangeFailure') -f $this,1
+                    }
+                    $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
+                    $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception,$exception.GetType().Name,'InvalidArgument',$this
+                    throw $errorRecord
                 }
-                $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
-                $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception,$exception.GetType().Name,'InvalidArgument',$this
-                throw $errorRecord
-            }
-            # This logic properly invokes the script block using lexical scoping in PowerShell 2, but
-            # in PowerShell 4 it does not work that way. Wish I knew how to change that behaviour.
-            (1..$this).foreach($ScriptBlock)
-        } catch {
-            if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
-                $PSCmdlet.ThrowTerminatingError($_)
-            } else {
-                throw
+                # This logic properly invokes the script block using lexical scoping in PowerShell 2, but
+                # in PowerShell 4 it does not work that way. Wish I knew how to change that behaviour.
+                (1..$this).foreach($ScriptBlock)
+            } catch {
+                if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+                    $PSCmdlet.ThrowTerminatingError($_)
+                } else {
+                    throw
+                }
             }
         }
+        $script:TypeExtensions.AddArrayItem($type.FullName,'Times')
+
+        $propertyName = 'Years'
+        $minValue = -10000
+        $maxValue = 10000
+        $propertyValue = $ExecutionContext.InvokeCommand.NewScriptBlock($timespanPropertyScriptBlock.Expand())
+        Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptProperty -MemberName $propertyName -Value $propertyValue
+        $script:TypeExtensions.AddArrayItem($type.FullName,'Years')
+
+        $propertyName = 'Months'
+        $minValue = -120000
+        $maxValue = 120000
+        $propertyValue = $ExecutionContext.InvokeCommand.NewScriptBlock($timespanPropertyScriptBlock.Expand())
+        Update-TypeData -Force -TypeName $type.FullName -MemberType ScriptProperty -MemberName $propertyName -Value $propertyValue
+        $script:TypeExtensions.AddArrayItem($type.FullName,'Months')
     }
-    $script:TypeExtensions.AddArrayItem($type.FullName,'Times')
 
     $propertyName = 'Weeks'
     $minValue = [System.Math]::Truncate([System.TimeSpan]::MinValue.TotalDays/7)
@@ -125,16 +179,16 @@ foreach ($type in $numericTypes) {
         $script:TypeExtensions.AddArrayItem($type.FullName,$propertyName)
     }
 
-    foreach ($scriptPropertyIdentifier in @('Weeks','Days','Hours','Minutes','Seconds','Milliseconds')) {
+    foreach ($scriptPropertyIdentifier in @('Years','Months','Weeks','Days','Hours','Minutes','Seconds','Milliseconds')) {
         Update-TypeData -Force -TypeName $type.FullName -MemberType AliasProperty -MemberName ($scriptPropertyIdentifier -replace 's$') -Value $scriptPropertyIdentifier
     }
-    $script:TypeExtensions.AddArrayItem($type.FullName,@('Week','Day','Hour','Minute','Second','Millisecond'))
+    $script:TypeExtensions.AddArrayItem($type.FullName,@('Year','Month','Week','Day','Hour','Minute','Second','Millisecond'))
 }
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+xIxmcU/cpFDdb1jZvHcKT0F
-# CKmgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUIHojvq+cntw4DVHKUJf7RhEG
+# Kn+gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -247,23 +301,23 @@ foreach ($type in $numericTypes) {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFJRZ
-# vXWlmtr38YtpsR9ufmZaWdpzMA0GCSqGSIb3DQEBAQUABIIBALeKbIsQhVqdxKCh
-# So4ilic+lasRGvP5ohp3e6p+lgxdX0MeBbQ8KAMwz2w8mzR+8A3IvgwXTOI1AQNq
-# 5yHrvqamFSf2ecUdAiK9GJ1LtaBZNMfyocQ/7p4HsQXkHlM4XvLNqjBa8cffSby/
-# 88R4hR1jHwreHQqZM1S86kwT+FnjagCHGcdpHgynwKEBZYic+17oE14BVGhssibD
-# Iau6gudOF+VKEsKAhtKEPwbuFAijHo68fVmaud5BHFgG66vPesU2S2S7I4phq7pS
-# XrBPkxiaBW9Hroa0seeWXt5chfi41J+RxlFGT7p3CDtJD6aWuqwjJfFOmS1G8xXl
-# CnEFlrWhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHXn
+# Dp+QF69dCNOZrDdrW3pMR1WJMA0GCSqGSIb3DQEBAQUABIIBADdOkysu+dDnOlTu
+# z53tYGdHTp4Tks6Rhqb1YFWs7zfqrJL9eQ4+wji8Ae29H5FW7LktsLHNsymVa59x
+# S0WFBvoeFqcILxkJAQo7lgyoXNqa+GUol/85O1WBiy7PXlupAaFbVDT9PQfSTpj8
+# FWrldbzcTTyO71Adf3wbMKyaiHc16dmllj8hrDkTS3o/uek425XEfk860uqjHTcu
+# PiROuV7HYlPHi/hkLnbWoTTpLjr6RjQne1DvlVvyL7UXYPQZZdhVabyi/9xPonB6
+# iecN5RkNx+47RegSwzey/BDcqOZqvcAylJPf8VcKEtJi0BKrzzXvId9WfoWfEvFE
+# k3GbkeehggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA4MTQyMDAwWjAjBgkqhkiG9w0BCQQxFgQUnhFM
-# kQ0puoK8JLBItK/zVxPoA18wDQYJKoZIhvcNAQEBBQAEggEAQsnnwdYaBVQ8FeSj
-# JZNrWi5kB9aliDH0GzP0aAN6+R/+PaR78sSuKNHVAJ0+kTMS4W9wOJdCA7cqH4TB
-# fDS0ipbcO+cWPTAqv/QREGt/3bFj812nJMvcT4LV6DfeWwxfawlq83fBIXSfCrEy
-# sCsa66PwaduRJFrqErtbD46gUUDc12j5O059augTDUFI06WXEO25XG9LJZF1EmTL
-# hgONCZrsLYZTDkIZ4HhLOh/jVkyqETXO+fKtiCQgHS0Dv2WyFhw+LkOFzZCzRMEj
-# 1jOFU41KGOugj92Mps1H10fVpG89DQFuqoHkC94NAWQh2t8SpaiAIO4RRmcUxm3M
-# hFFWIg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MDAwNzIzWjAjBgkqhkiG9w0BCQQxFgQU1Gfl
+# +QsWLbFq9fKaJCkf5VT3WoIwDQYJKoZIhvcNAQEBBQAEggEAQivT7PO34Kj0K2QB
+# q135KY2uZh2XKcbdIiUXadUrnWDMspC+DgiokGMqRTAA+hyGXoh6J7BexamhL0ft
+# nG+FhP7bFHbUfXVHAQwwl8YzEQ2TiPxVnHiPlMN71bgajTJ5MeNIGqf4WiWqlYXd
+# DNWQUY0Xop5J5wdo43AIy/JZdi9uPvCNoOjRbJZZh3SHTjhow23unW1dGbvuXzab
+# Tdc8NrN6SdgrYjmdoM3P9b+o4C49RCoJhwxivKmhNxGmkGb6qhkmeiHF0QmGxI+n
+# 7SpQVDfJWhvAqzqTl0EIsfc+U8pE259yAVZXQSU4Hx7fnQaAthU9VU2vB7mA3OsP
+# o2poNQ==
 # SIG # End signature block
