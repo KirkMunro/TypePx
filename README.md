@@ -32,6 +32,51 @@ You should have received a copy of the GNU General Public License in the
 license folder that is included in the ScsmPx module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 
+### Installing the TypePx module
+
+Note that TypePx used to be called TypeAccelerator. Both modules share several
+commands and have the same GUID. If you have the TypeAccelerator module installed,
+you should manually remove that module before you download and install TypePx.
+
+TypePx is dependent on the SnippetPx module. You can download and install the
+latest versions of TypePx and SnippetPx using any of the following methods:
+
+#### PowerShellGet
+
+If you don't know what PowerShellGet is, it's the way of the future for PowerShell
+package management. If you're curious to find out more, you should read this:
+<a href="http://blogs.msdn.com/b/mvpawardprogram/archive/2014/10/06/package-management-for-powershell-modules-with-powershellget.aspx" target="_blank">Package Management for PowerShell Modules with PowerShellGet</a>
+
+Note that these commands require that you have the PowerShellGet module installed
+on the system where they are invoked.
+
+```powershell
+# If you don’t have TypePx installed already and you want to install it for all
+# all users (recommended, requires elevation)
+Install-Module TypePx,SnippetPx
+
+# If you don't have TypePx installed already and you want to install it for the
+# current user only
+Install-Module TypePx,SnippetPx -Scope CurrentUser
+
+# If you have TypePx installed and you want to update it
+Update-Module
+```
+
+#### PowerShell 3.0 or Later
+
+To install from PowerShell 3.0 or later, open a native PowerShell console (not ISE,
+unless you want it to take longer), and invoke one of the following commands:
+
+```powershell
+# If you want to install TypePx for all users or update a version already installed
+# (recommended, requires elevation for new install for all users)
+& ([scriptblock]::Create((iwr -uri http://tinyurl.com/Install-ModuleFromGitHub).Content)) -ModuleName TypePx,SnippetPx
+
+# If you want to install TypePx for the current user
+& ([scriptblock]::Create((iwr -uri http://tinyurl.com/Install-ModuleFromGitHub).Content)) -ModuleName TypePx,SnippetPx -Scope CurrentUser
+```
+
 ### Loading the TypePx module
 
 When it comes to module auto-loading, type extensions do not function the
@@ -122,11 +167,17 @@ $a.Slice(3)[1]
 ##################
 # Get a timespan in a human readable way
 $x = 30
+$x.Years
+$x.Months
+$x.Weeks
 $x.Days
 $x.Hours
 $x.Minutes
 $x.Seconds
 $x.Milliseconds
+(1).Year
+(1).Month
+(1).Week
 (1).Day
 (1).Hour
 (1).Minute
@@ -137,11 +188,10 @@ $x.Milliseconds
 (7).Days.FromNow
 (1).Week.Ago.InUtc
 # Use relative dates in practice
- Get-EventLog -LogName System -After ((2).Days.Ago)
+Get-EventLog -LogName System -After (2).Days.Ago
 # Perform a task a specific number of times
 $x = 10
-$x.Times{'Hello'}
-# Note that in PowerShell 3, you must include the script block in brackets
+# Note that in PowerShell 4 or later, the brackets are not necessary
 $x.Times({'Hello'})
 ######################
 # Fun with collections
@@ -164,6 +214,8 @@ $ht.AddArrayItem('B','This adds to the collection')
 $ht
 # Note that PowerShell 4+ include foreach and where "magic" methods. This module
 # adds them to PowerShell 3
+# Perform some task on each object in a collection (brackets not necessary in PSv4+)
+(gsv w*).foreach({'Name = ' + $_.Name + '; DisplayName = ' + $_.DisplayName})
 # Expand a property in a collection
 (gsv).foreach('Name')
 # Convert every object in a collection to another type
@@ -178,7 +230,7 @@ $s.foreach('Start')
 # Invoke a method on all objects in a collection, with parameters
 $a = (1,2),(3,4),(5,6)
 $a.foreach('Get',1)
-# Filter a collection
+# Filter a collection (again, brackets are not necessary here in PSv4+)
 $s = gsv w*
 $s.where({$_.Status -eq 'Running'})
 # Get the first item matching a filter
