@@ -26,7 +26,7 @@ license folder that is included in the ScsmPx module. If not, see
 @{
       ModuleToProcess = 'TypePx.psm1'
 
-        ModuleVersion = '2.0.0.9'
+        ModuleVersion = '2.0.0.10'
 
                  GUID = 'cacd8e78-b36a-4c37-90f8-9f8e2879abd6'
 
