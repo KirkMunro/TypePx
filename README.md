@@ -29,7 +29,7 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License in the
-license folder that is included in the ScsmPx module. If not, see
+license folder that is included in the root folder of the module. If not, see
 <https://www.gnu.org/licenses/gpl.html>.
 
 ### Installing the TypePx module
