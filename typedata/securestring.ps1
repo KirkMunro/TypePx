@@ -1,53 +1,56 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the DebugPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName Peek -Value {
+$typeName = 'System.Security.SecureString'
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Peek -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
     try {
+        # Convert the secure string to an unencrypted bstr
         $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($this)
+        # Return the unencrypted bstr to the caller
         [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
     } finally {
+        # Free the memory created to store the bstr
         if ($bstr -ne $null) {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
         }
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','Peek')
 
-Update-TypeData -Force -TypeName System.Security.SecureString -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetMD5Hash -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
+    # Return the MD5 hash of the unencrypted string
     $this.Peek().GetMD5Hash()
 }
-$script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSXH48STNu5y91Y8/EcBCy3IX
-# LzigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUrBGEiauzSLc+nEHaLAqYcfl6
+# wY2gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -160,23 +163,23 @@ $script:TypeExtensions.AddArrayItem('System.Security.SecureString','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCcH
-# 5HDSRMYqIFbX2KB9HUKjvh6QMA0GCSqGSIb3DQEBAQUABIIBAB44ovPASZ4mb+oU
-# y3mtH2dBab4JqsqmZXFwJfEO9jKO6/RGCdkbC4NT003aah2uzLFweEYZdyOcgtNz
-# 6WjCFYxj7WqOvS/VFcXVUdhn1JPLkpFfAe8VSs7SjiZ+HzP5ZpT72dGnAmiPpTcT
-# KLSfJ8zLDyd8uUNnF+W6cB/zDjWUsez1K5mLSzEgYv9Jr6GnqtZEBqZg/dpUotPz
-# XUg2tbpvTGMDLe8mIecAd4szBer+FuZHm/+uhm85el2HFtj0ziYeemu90EHJiJNh
-# 3djRZ/GSvOLK6T71W6ZceCzWUFqojFtTStGOWERFy1j0PYKZ2liJ6ivfXZME262J
-# QJodb6ChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFGox
+# 0pD/tSkO/NRWAadQ2ZblxEi5MA0GCSqGSIb3DQEBAQUABIIBAMP6fja5gJuDHJRd
+# rE5hBJKpkB9U101gQdO1gGAO/GfArCDgikG/OPSJIIr9PFyDpXi4AfvgK7QU+NiF
+# WJp5tVfTqaW00jPg9LtHw/TCnY3w380yE2I9YKw/jUnITKikZy5xHuxD95GFsmHl
+# 2h6v3wBLfYrS0vCS8P35+pzru7Sy3/3OodO8958viDQk7L20PBbTpCb5qBa6FZQ0
+# I9KN075pLp/XBBSZLI//vMkPdlMvPHua9ZTXSJoKLSaAec9nn4FQwvC6SFmAUQfT
+# 8uJ19sQOiXO6JSfpBbUlqG3ltGeY9Q841LC+MTC8An0l5GwxGHtlV/Ba1fe6kKvz
+# tTFQxgKhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMxWjAjBgkqhkiG9w0BCQQxFgQUQpFT
-# e36mc+I2Hc3jx5hLjxsL5M8wDQYJKoZIhvcNAQEBBQAEggEAVhc2C6bE47no4K3K
-# 19HvnPNUuGq0posRiIEEn9/7qFbsmN4EgiDsSxdJWCRMow7/pAWg1oDuF9D6e4J9
-# X8oklLyZYfiz7je0GiIIseuGGuaJf11rhqE24pQhB8iFZ1yD3aB3H/Gl4CS7isf5
-# PBtzfI2rHZFLtSuF2qZSovaf13gbe36Ug/c9RTvK4mWfDI/e7cobjtirCv2zg10U
-# EtrVLkC+JH6ix0rjdNhbKAG+D/xyB2y5KmnL9TD4GETNBFUfnvpBwBRUfd9HS5CJ
-# T57zznxfWGI9UgXFC07MmFin1JiCMkrRG3tyKGjG4cCLumL3x+cmY8N4UFHvYwND
-# XK4tlQ==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMTAwWjAjBgkqhkiG9w0BCQQxFgQU50NC
+# c1IFEce7PD0MG+gOyq/I2uwwDQYJKoZIhvcNAQEBBQAEggEAHCxoXW2RITLxcisJ
+# 0WGs4UPDQrel5f1Yt5nE55S770bkaK09bj1LnlLvy+qbAqQiKkctyUS5YweLTluh
+# WwPmtg6Yy7NBxOt4Gt8hbVu303b5OEBR4dW6MayTVid5jAGK1yawa9RT0ePIZbgQ
+# QceWtfBPcFLU2MrUrYmt8+01yu6R4N8oW5y3TgLN0mDlbsFyH/8eCGLeV3l+BpLp
+# vAXCDk4JtF4c/CHTGvi4gm0P0nGk3rIzS/bVVWzaFkyc3J94n8Rgc1lMpOgBPX0U
+# rLqBaoqeSxrspNzFxUV5JK//+Il/tjjuNMxOg4OikJDqCDt/mNL/AaAOTcUJos2e
+# ZKVr7g==
 # SIG # End signature block

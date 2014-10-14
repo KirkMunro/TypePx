@@ -1,26 +1,25 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the ScsmPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
 # This script should only be invoked when you want to uninstall TypePx.
@@ -78,8 +77,8 @@ try {
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU7ma+qDEHMbDvwEfuZR/cSOHB
-# 8W+gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUBBwCtGuy93OKQJf/4hh7LL1R
+# gTugghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -192,23 +191,23 @@ try {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPMJ
-# 3ewjzNwqwN7qacu/x6Yxak2OMA0GCSqGSIb3DQEBAQUABIIBADM3PLtVGwhuzWrx
-# 4txW7WmtbDL7cwpmqSoeTdLhxySZiksz/on9uneJqFeqX1xx6V9mDRXPO+z+zoJW
-# t5SVjHW+RQMuMrZuwDW2jTgYeb8qaAi6iBKqUtn0j0NGwjwiF4gDXWU0tz3BS2JR
-# /8LuSbnuX+cWw5NtLDLlkgO+zKui9QFVqbxCG8/X5OAMFECu8YTAGApJG6g66H+/
-# yeH4few9Rze2EJOqWAYNn5TMo3FJTkZCP1/TiXYjQ1G2ytceXLWEIGj4iJa4qbAh
-# FMTVCf08JzoIh/n5rGFcA8RZrB9+A9jUIoKBsiqItW0dgusPAT3WppqRrZvGvq5O
-# UERgtKKhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFDyL
+# 2LTM0vTVIQkjyJvPm5QOo65fMA0GCSqGSIb3DQEBAQUABIIBAGxYV/PUOdAFOHyR
+# D9RkQRAodEcQBo9uEPEJs94+Nlw3o6yypgRr1GRwbWDYuYCnRU6mBE1QpuJhPrv1
+# pOBlMW62aX9YlE76ZC0kA9PjElvquGtfxYVkJ8EsAgEDaXh4OuJQYDxsn7iUoeLh
+# Y1dudE/R/JdAPXzu1k4ULcZB7omhe1whmvINuGO5oUb3iouknjzj8xgdon8AUNMQ
+# JzgJ/T+HRRP7mJWiP+t2o+riyXTvoRPBm2MifFdfhOsH0IhQhH5RyGcfxOJBFwi4
+# uQPKhENPH5BXZ+bKMljaV98TrkLueX7RUSBopThg5L736uUQAcNwzXbtQPc5erJS
+# jGeqhWuhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzI0WjAjBgkqhkiG9w0BCQQxFgQUxgKZ
-# Wz2FYp6chBW9bciL7wGXg3EwDQYJKoZIhvcNAQEBBQAEggEAJfP/jPYo2ErFNd4v
-# BizrLqWF+8SFTtpe0l5eklkWqN8pqU64F9sdBXp2a4G4DQvnJZ43F56wlvtqhhtq
-# lDBbI85/rz4Bq/oAUkyIo+zw5YVYS2LV+sSOgTi1alF0sGUQOFfihGahzCkJ5asm
-# f8maqejExbsxZMeL0yRTotF0ydehziJPjnpsyr/DtStQhGCHv/B8i2DljqfGotYZ
-# n7xQT3SD7CxiYzMg00bOzwy13xZMqEZjkIcQL6ThgnXh3BO3Gd8/oVEvvMGuO+X9
-# NPb08BqnSbNIF/CDXXdNTkraQEpFj90uxb+/9UGIVSFtSYRkPANmecmO7ft6zdBg
-# Gf5Phg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMDU5WjAjBgkqhkiG9w0BCQQxFgQU5235
+# SqQimjuo63XSTFTgC3nzf5gwDQYJKoZIhvcNAQEBBQAEggEAT1+wPaLPmW+ZwUXd
+# 0M2ClltnxK/PgwlbEWl+s/a/ID3JVgkAlnkDHCb4k9C8Q9ooLmYjIHsez4u1GBR8
+# n+XlPVOhuRMkxYNhcFa+AHqi1oY4w4rrBOmdjEKNfhTVE+QKkEVic8MN2KR0yw6G
+# 2PIs8STpTThxu2h0ApXXXu5ztDtvVFrypLvgTkWcljq8KieX85jXWicSHptBT7d2
+# 6nRwqQrGd5xfwevmhGjDl+FVcpaWpJcYrAxsqvregGGs3UULYgOBkQjRUlQqKKxO
+# sRGnt8zpvaoIiMJ0fPyup1t/C857HxGFP1+Nno1bn7LU+uDXMZ3+zQYna7rJfdH7
+# BmEjSg==
 # SIG # End signature block

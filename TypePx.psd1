@@ -1,32 +1,31 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the ScsmPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
 @{
       ModuleToProcess = 'TypePx.psm1'
 
-        ModuleVersion = '2.0.0.10'
+        ModuleVersion = '2.0.0.11'
 
                  GUID = 'cacd8e78-b36a-4c37-90f8-9f8e2879abd6'
 
@@ -34,7 +33,7 @@ license folder that is included in the ScsmPx module. If not, see
 
           CompanyName = 'Poshoholic Studios'
 
-            Copyright = '© 2014 Kirk Munro'
+            Copyright = 'Copyright 2014 Kirk Munro'
 
           Description = 'The TypePx module adds properties and methods to the most commonly used types to make common tasks easier. Using these type extensions together can provide an enhanced syntax in PowerShell that is both easier to read and self-documenting. TypePx also provides commands to manage type accelerators. Type acceleration also contributes to making scripting easier and they help produce more readable scripts, particularly when using a library of .NET classes that belong to the same namespace.'
 
@@ -61,6 +60,8 @@ license folder that is included in the ScsmPx module. If not, see
                         )
 
              FileList = @(
+                        'LICENSE'
+                        'NOTICE'
                         'TypePx.psd1'
                         'TypePx.psm1'
                         'functions\Add-TypeAccelerator.ps1'
@@ -68,8 +69,14 @@ license folder that is included in the ScsmPx module. If not, see
                         'functions\Remove-TypeAccelerator.ps1'
                         'functions\Set-TypeAccelerator.ps1'
                         'functions\Use-Namespace.ps1'
+                        'helpers\Add-AliasPropertyData.ps1'
+                        'helpers\Add-ScriptMethodData.ps1'
+                        'helpers\Add-ScriptPropertyData.ps1'
                         'scripts\Install-TypePxModule.ps1'
                         'scripts\Uninstall-TypePxModule.ps1'
+                        'snippets\Hashtable.AddArrayItem.ps1'
+                        'snippets\String.Expand.ps1'
+                        'snippets\String.ToScriptBlock.ps1'
                         'typedata\array.ps1'
                         'typedata\datetime.ps1'
                         'typedata\enumerable.ps1'
@@ -79,13 +86,12 @@ license folder that is included in the ScsmPx module. If not, see
                         'typedata\psscriptcmdlet.ps1'
                         'typedata\securestring.ps1'
                         'typedata\string.ps1'
-                        'license\gpl-3.0.txt'
                         )
 
           PrivateData = @{
                             PSData = @{
                                 Tags = 'type accelerator extended system ets extensions add-member update-typedata ps1xml'
-                                LicenseUri = 'http://www.gnu.org/licenses/gpl-3.0.html'
+                                LicenseUri = 'http://apache.org/licenses/LICENSE-2.0.txt'
                                 ProjectUri = 'https://github.com/KirkMunro/TypePx'
                                 IconUri = ''
                                 ReleaseNotes = @'
@@ -99,8 +105,8 @@ Import-Module TypePx
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUcy44SIqG/upDwSOY3JMp1R3P
-# 5SCgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU9ZmUn0e98tjReRdOpiH336cz
+# WdSgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -213,23 +219,23 @@ Import-Module TypePx
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIRA
-# g7o/xed8uD4IbXH/MfU1nPpUMA0GCSqGSIb3DQEBAQUABIIBABElDjw60KWa46v5
-# 2/fNbhcT7yoS8qmOGWo0gVSxOKrJaHHiV5kFler27pwnrBSQAdTDABTMs6vnhtkB
-# hzShGW5tD6cu4NNRJXSk7ypJgV0Rac/jIzsAYj9v81Un7MoS0LknGsdI2SYnG6RX
-# 5vWgoWYBiUBl7tXz6NJKlmJB33yjQM/qfx6CCF5iM8zK1+q9dgS1HTcnqClE3HjN
-# WEaSiYawRFy+G/wdBEUJ58vOV1EX2FhZWbsxPad0UsErzUJsW8cMfBM4n8E+dED1
-# 3bCtA+Nxs7xLEobLLReg3zTgn+HNzgjIEsR1omzGdrS/CXp7NtUBi+9TBkoLQkHg
-# IeTSBS2hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFGqN
+# d8Dhpg+5lV6gCjYd3nW4/aJtMA0GCSqGSIb3DQEBAQUABIIBABdNFl3xjaZ6ZIpG
+# hSTUvDkf3ESy6NoSZoROPaZYomfno5M0lMILhN6QxWvn3EiTidFoTewdkR/RJZzD
+# RlRWZ7dceQe168VYSD3KMT8PzOrFV5t+2IMOKu0TuvMeKsyVGLAfEKUF+QLVZBz4
+# 0naB4mn5uDNyKXaDYY35VyVUpOdF0RU4NHlqMe58tHaSW3MhUwKnchdvE+156YSh
+# y7LKdZoZD6ok148b7wXVnUxUdwFBA95dtFsF1BY7n2RtJ3FHoqOOpZ2hgEkC6HAH
+# 9QaY4+wBF4qa/opUlIFp2cpDxv2vsRDku/zoJ25xoAMz2EEWJZnSor2dmPfD7SXJ
+# U/6w10GhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMwWjAjBgkqhkiG9w0BCQQxFgQUt1Rd
-# YRMpTuoBC3ip0U+RwJhPpk4wDQYJKoZIhvcNAQEBBQAEggEALbKQWhw0DnFD4yPP
-# o1ZP/7N5r3aM7CT6RfGNE8eQsTGsTyPlo2MpEE3QMzfi4hDG+5BIVUfYSeo4C8Eq
-# G3yAMzt6pFBAiqF2C1zbduJosbZIcmKt+RXwbIBbSULUUZecnaJPID7D1cZOwsyQ
-# UOp17k1bec67sk7L1V9uZjlyK7cU2HcNdh7difxx9G8Dmikyc3lEcCDjeNQInPEq
-# ey9coayPDgtl1et+u6MsEy5F9Gm/LUxFCKfvMmDqnfygI6oOQYvfrC8jqTAaVwaH
-# p1ZkotSyKgxJPtEo86dtLSISeet6CFwrPFrRz3CL4ZptwhYWT+pcbDCkxBMOogQZ
-# tkJzzw==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMDU4WjAjBgkqhkiG9w0BCQQxFgQUM0IH
+# 0F+/xk5nM9nz4ND482zMcUMwDQYJKoZIhvcNAQEBBQAEggEAEqDh1k4bIf77x4jY
+# sbFomoqZyGDX+UyKOwluojMgLMubIrZmjWTzuVysD1V3J+EA5n/eYie5NXw6o+KE
+# Ml6jnWInWaBK8St3gRKws/EyKajKt3lvvExJqAlga7donhu2vZPB7fTLRieWRMpy
+# Q50OjcCmsA3xhn/DfvdU+FLnQlJU6hwYSmVeYHlDqjBOtSi8EOPLDxjbeBsks9R/
+# 39GllPPEso53cCeNG1ikrYQ9S1jVosaYHzrsNyVJn7Y7wnP5kwkWakpFmz+PmxwD
+# fHDBifrGFNqytM6gnwNHIBkoeeLv6lDHBO0A2qMp6KrT7F+l0F3c5RdGpM+zCysa
+# oFj9WQ==
 # SIG # End signature block

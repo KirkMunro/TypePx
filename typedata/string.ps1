@@ -1,79 +1,90 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the DebugPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberName Expand -Value {
-    [System.Diagnostics.DebuggerStepThrough()]
-    param()
-    try {
-        $escapedString = $this.Replace('"','""')
-        . $ExecutionContext.InvokeCommand.NewScriptBlock("""${escapedString}""")
-    } catch {
-        if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
-            $PSCmdlet.ThrowTerminatingError($_)
-        } else {
-            throw
-        }
-    }
-}
-$script:TypeExtensions.AddArrayItem('System.String','Expand')
+$typeName = 'System.String'
 
-Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberName MatchAny -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToScriptBlock -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
+        # A hashtable of variable values that you want to use during the conversion
+        [System.Collections.Hashtable]
+        $VariableValues = @{}
+    )
+    # Invoke a snippet to convert the string to a script block
+    Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
+        String = $this
+        VariableValues = $VariableValues
+    }
+}
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Expand -ScriptBlock {
+    [System.Diagnostics.DebuggerStepThrough()]
+    param()
+    # Invoke a snippet to expand the string
+    Invoke-Snippet -Name String.Expand -Parameters @{String = $this}
+}
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName MatchAny -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The regular expression strings that you want to compare to the string
         [Parameter(Position=0, Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
         [System.String[]]
         $Values
     )
+    # Add remaining arguments to the values collection for easier invocation
     if ($args) {
         $Values += $args
     }
+    # Return true if any of the regular expression strings match the string; false otherwise
     $stringToCompare = $this
     $Values.where({$stringToCompare -match $_}).Count -gt 0
 }
-$script:TypeExtensions.AddArrayItem('System.String','MatchAny')
 
-Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberName LikeAny -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName LikeAny -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
+        # The wildcard strings that you want to compare to the string
         [Parameter(Position=0, Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
         [System.String[]]
         $Values
     )
+    # Add remaining arguments to the values collection for easier invocation
     if ($args) {
         $Values += $args
     }
+    # Return true if any of the wildcard strings are like the string; false otherwise
     $stringToCompare = $this
     $Values.where({$stringToCompare -like $_}).Count -gt 0
 }
-$script:TypeExtensions.AddArrayItem('System.String','LikeAny')
 
-Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberName GetMD5Hash -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetMD5Hash -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
+    # Return the MD5 hash of the string
     $md5 = [System.Security.Cryptography.MD5]::Create()
     $bytes = [System.Text.Encoding]::ASCII.GetBytes($this)
     $hash = $md5.ComputeHash($bytes)
@@ -83,12 +94,11 @@ Update-TypeData -Force -TypeName System.String -MemberType ScriptMethod -MemberN
     }
     $sb.ToString()
 }
-$script:TypeExtensions.AddArrayItem('System.String','GetMD5Hash')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUqKHXGVmAzOpSX+di99bLGSzK
-# xNigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUAszss2i3hnbmLs3Eoo63A8I+
+# YJ+gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -201,23 +211,23 @@ $script:TypeExtensions.AddArrayItem('System.String','GetMD5Hash')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFA6z
-# UJO+JBO2NCNG4w8GDYZd0F4lMA0GCSqGSIb3DQEBAQUABIIBAHpDus0t/0w1Dja0
-# /BMdeV+zxuRQJGIhAK8Z8kTeISB037fpDzo6juWgvWD0O5A7j9Zn3YasWQD0N5ry
-# QusBCTd7qqRu6C4Bqs513R8fgGQT3Nlzi/c0weZ91XKYP04vquk9m5G2kmgM9af1
-# njgE+tgl3J5PJpzVLK7G2/M6IScJRhfI+56ZT3gVbYsmAFDiVCNOp/3VQb8zljpC
-# iDZ6xL4jw7ybzoa09Jv0ircVnGAM6jni5WGzGYIm0MT5uTmaG1+tVOqeF1gnO0Gy
-# t3TUzpLHR1OZ8DrNqEAMeh5zJvh3P4OdG0+oI35PTY6TGHlh1d7Y2F8UBG9XFWXo
-# zQFhUpqhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFKC2
+# qG3PrYzHgh7f7OIPTGv2WJQiMA0GCSqGSIb3DQEBAQUABIIBAEytHfUSGEekENOS
+# cfsr0NG9d16Gt33eM+E9Se1NpqALVW22PB/9zDJ90Nd1GY7zeekbfiTSXd+tir/y
+# +A7fkT7zBEPPNSzbIkJRiFSxlj9fGOL0cHyFukZYk2xTB0hm23pShxXyypUdA34A
+# V9YF5tOaAX3AqZ5hmiEDqmmhkPpRjIyIhBbkytSK+d8o8WX27hhhtwJCKwpz29FS
+# dtGAMOj8+wGWxm1w7zgQJ+3/YY9uC6KZqWORXOxT5xSxAU+fxOOeyRwNWizy4waz
+# 6oMpwhRwrm8kXCv6FXiitl0v6vOZSSVKI0fXVVvyDKqFRiZuFpnl93UKPRFKbyan
+# szk8LTyhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzI0WjAjBgkqhkiG9w0BCQQxFgQUqfUO
-# /2D+AFmyQnf7b5cqtJJm90MwDQYJKoZIhvcNAQEBBQAEggEAno3VYyw6EiLLCoot
-# 4ViwppKwkU4rSHqKrHgtzCKaEFhLYlQVFsmpzqCpVdRYOUR2bhC2ax1Bhv40kwZA
-# Xf5tjbCH/8j7w7E414FM6aA/gQmFfugD7afCGGJvsGI2n17awnx8nXAaB58dNbYb
-# CqAflMrpVk072LTuGZncEa4Nt6rKf5Ukcswph9sYKpzZXDhMdtNN5PprPtnwbK80
-# 3w+Fb7FPBmj4r7sbqXc0/jUDg/2VU9smILd2rZ9V5WkN3zuUbxTG0FPuhE1khHBu
-# /ykZeFggpAMInrk/xLdXpQbFbiBJqhZOmrfhgW5+CLmMjwksafUAe/ntR/JdSvYV
-# DQGdpw==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMTAwWjAjBgkqhkiG9w0BCQQxFgQUsCVL
+# mMNjtdaXs5mivhf15O2PPBYwDQYJKoZIhvcNAQEBBQAEggEAa2pZxJVrk1BVvc7b
+# hjptwtUrEbiUQN5PSytkswqCRbrRGr3lGVUolbRTWCNHjQP6/gKv5Glpm3kz5NNQ
+# hj6EIkMduLcQ2rIZAcue686l5B4n6SMeEQm2Zt8YyN/I4FneytC8GZBg+Mc2qdvy
+# DXcoipjvCYe9UR/ucXRRu45+vMIiUkYTnal5rDfEd8WPXTYGOej3qwIUGFjk2ZyR
+# SGeH8XEpeZNhj7tf7+rsZXW+su9Xq7i8Pp2pG3MxTYBuFPprgZ7jw1Xq40pGJHEX
+# 0pR3ixZxzA+h/TQYvTgaawkYVStagcObGvFlY88bmox+fTFSkzctxOCAp5JRjE0W
+# RV36tQ==
 # SIG # End signature block

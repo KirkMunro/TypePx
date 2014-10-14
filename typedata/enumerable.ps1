@@ -1,294 +1,350 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the DebugPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
-$ienumerableBaseTypes = @(
-    [System.Collections.ObjectModel.Collection`1[System.Object]]
-    [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+$commonlyUsedGenericTypeParameters = @(
+    'System.Management.Automation.PSObject'
+    'System.Object'
+    'System.String'
+    'System.Int32'
+    'System.Int64'
 )
+$typeNames = @()
 foreach ($assembly in [System.AppDomain]::CurrentDomain.GetAssemblies()) {
     foreach ($type in $assembly.GetTypes()) {
-        if ($type -eq [System.String]) {
+        # If the type is not public or if it is an interface, skip it
+        if ((-not $type.IsPublic) -or $type.IsInterface) {
             continue
         }
-        if ($type.IsPublic -and
-            -not $type.IsInterface -and
-            (@([System.Object],[System.MarshalByRefObject],[System.ValueType]) -contains $type.BaseType) -and
-            ($type.GetInterfaces() -contains [System.Collections.IEnumerable])) {
-            $ienumerableBaseTypes += $type
+        # If the type is String or XmlNode, skip it (these are exceptions in PowerShell)
+        if (@([System.String],[System.Xml.XmlNode]) -contains $type) {
+            continue
+        }
+        # If the type does not implement IEnumerable or it implements IDictionary, skip it
+        $interfaces = $type.GetInterfaces()
+        if (($interfaces -notcontains [System.Collections.IEnumerable]) -or
+            ($interfaces -contains [System.Collections.IDictionary])) {
+            continue
+        }
+        # If the base type is not Object, MarshalByRefObject, or ValueType, skip it
+        if (@([System.Object],[System.MarshalByRefObject],[System.ValueType]) -notcontains $type.BaseType) {
+            continue
+        }
+        # If the type definition is generic, add a collection of common generic types to our
+        # enumerable type collection; otherwise, just add the type
+        if ($type.IsGenericTypeDefinition) {
+            foreach ($typeParameter in $commonlyUsedGenericTypeParameters) {
+                $typeNames += "$($type.FullName)[${typeParameter}]"
+            }
+        } else {
+            $typeNames += $type.FullName
         }
     }
 }
 
-foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
-    if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
-        # I would love to make these more efficient for 3.0, but it is too difficult to work around the
-        # limitation of being unable to invoke a script block in its scope while passing it parameters
-        # without using a pipeline.
-        Update-TypeData -Force -TypeName $ienumerableBaseType.FullName -MemberType ScriptMethod -MemberName foreach -Value {
-            [System.Diagnostics.DebuggerStepThrough()]
-            param(
-                [Parameter(Position=0, Mandatory=$true)]
-                [ValidateNotNull()]
-                [System.Object]
-                $Object
-            )
-            $results = @()
-            if ($Object -is [System.Management.Automation.ScriptBlock]) {
-                # Process as if we used ForEach-Object
-                $results = $this | ForEach-Object -Process $Object
-            } elseif ($Object -is [System.Type]) {
-                # Convert the items in the collection to the type specified
-                foreach ($item in $this) {
-                    $results += $item -as $Object
-                }
-            } elseif ($Object -is [System.String]) {
-                foreach ($item in $this) {
-                    if ($member = $item.PSObject.Members[$Object -as [System.String]]) {
-                        if ($member -is [System.Management.Automation.PSMethodInfo]) {
-                            # Invoke the method on objects in the collection
-                            if ($result = $member.Invoke($args)) {
-                                $results += $result
-                            }
-                        } elseif ($member -is [System.Management.Automation.PSPropertyInfo]) {
-                            if ($args) {
-                                # Set the property on objects in the collection
-                                $member.Value = $args
-                            } else {
-                                # Get the property on objects in the collection
-                                $results += $member.Value
-                            }
-                        }
-                    }
-                }
+if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
+    Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName foreach -ScriptBlock {
+        [System.Diagnostics.DebuggerStepThrough()]
+        param(
+            # A script block (expression), type (conversion type), or string (property or method name)
+            [Parameter(Position=0, Mandatory=$true)]
+            [ValidateNotNull()]
+            [System.Object]
+            $Object
+        )
+        # Create an array to hold the results
+        $results = @()
+        if ($Object -is [System.Management.Automation.ScriptBlock]) {
+            # Process as if we used ForEach-Object
+            # I would love to make this more efficient for 3.0, but it is too difficult to work around the
+            # limitation of being unable to invoke a script block in its scope while passing it parameters
+            # without using a pipeline.
+            $results = $this | ForEach-Object -Process $Object
+        } elseif ($Object -is [System.Type]) {
+            # Convert the items in the collection to the type specified
+            foreach ($item in $this) {
+                $results += $item -as $Object
             }
-            if ($results) {
-                $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-                ,$results
-            }
-        }
-        $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'foreach')
-
-        Update-TypeData -Force -TypeName $ienumerableBaseType.FullName -MemberType ScriptMethod -MemberName where -Value {
-            [System.Diagnostics.DebuggerStepThrough()]
-            param(
-                [Parameter(Position=0, Mandatory=$true)]
-                [ValidateNotNull()]
-                [System.Management.Automation.ScriptBlock]
-                $Expression,
-
-                [Parameter(Position=1)]
-                [ValidateNotNullOrEmpty()]
-                [ValidateSet('Default','First','Last','SkipUntil','Until','Split')]
-                [System.String]
-                $Mode = 'Default',
-
-                [Parameter(Position=2)]
-                [ValidateNotNull()]
-                [ValidateRange(0,[System.Int32]::MaxValue)]
-                [System.Int32]
-                $NumberToReturn = 0
-            )
-            $results = @()
-            switch ($Mode) {
-                'First' {
-                    # Return the first N objects matching the expression (default to 1)
-                    if ($NumberToReturn -eq 0) {
-                        $NumberToReturn = 1
-                    }
-                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
-                    break
-                }
-                'Last' {
-                    # Return the last N objects matching the expression (default to 1)
-                    if ($NumberToReturn -eq 0) {
-                        $NumberToReturn = 1
-                    }
-                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn
-                    break
-                }
-                'SkipUntil' {
-                    # Skip until an object matches the expression, then return the first N objects (default to all)
-                    $outputCount = 0
-                    if ($NumberToReturn -eq 0) {
-                        $NumberToReturn = $this.Count
-                    }
-                    foreach ($item in $this) {
-                        if (($outputCount -eq 0) -and -not (Where-Object -InputObject $item -FilterScript $Expression)) {
-                            continue
+        } elseif ($Object -is [System.String]) {
+            foreach ($item in $this) {
+                if ($member = $item.PSObject.Members[$Object -as [System.String]]) {
+                    if ($member -is [System.Management.Automation.PSMethodInfo]) {
+                        # Invoke the method on objects in the collection
+                        if ($result = $member.Invoke($args)) {
+                            $results += $result
                         }
-                        if ($outputCount -lt $NumberToReturn) {
-                            $outputCount++
-                            $results += $item
-                        }
-                        if ($outputCount -eq $NumberToReturn) {
-                            break
-                        }
-                    }
-                    break
-                }
-                'Until' {
-                    # Return the first N objects until an object matches the expression (default to all)
-                    $outputCount = 0
-                    if ($NumberToReturn -eq 0) {
-                        $NumberToReturn = $this.Count
-                    }
-                    foreach ($item in $this) {
-                        if (Where-Object -InputObject $item -FilterScript $Expression) {
-                            break
-                        }
-                        if ($outputCount -lt $NumberToReturn) {
-                            $outputCount++
-                            $results += $item
-                        }
-                        if ($outputCount -eq $NumberToReturn) {
-                            break
-                        }
-                    }
-                    break
-                }
-                'Split' {
-                    # Split based on condition, to a maximum count if one was provided (default to all)
-                    $collection0 = @()
-                    $collection1 = @()
-                    if ($NumberToReturn -eq 0) {
-                        $NumberToReturn = $this.Count
-                    }
-                    foreach ($item in $this) {
-                        if (($collection0.Count -lt $NumberToReturn) -and
-                            (Where-Object -InputObject $item -FilterScript $Expression)) {
-                            $collection0 += $item
+                    } elseif ($member -is [System.Management.Automation.PSPropertyInfo]) {
+                        if ($args) {
+                            # Set the property on objects in the collection
+                            $member.Value = $args
                         } else {
-                            $collection1 += $item
+                            # Get the property on objects in the collection
+                            $results += $member.Value
                         }
                     }
-                    $collection0 = $collection0 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-                    $collection1 = $collection1 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-                    $results = @($collection0,$collection1)
-                    break
                 }
-                default {
-                    # Filter using the expression, to a maximum count if one was provided (default to all)
-                    if ($NumberToReturn -eq 0) {
-                        $results = $this | Where-Object -FilterScript $Expression
-                    } else {
-                        $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+            }
+        }
+        # Return the results in an objectmodel collection to the caller
+        if ($results) {
+            $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+            ,$results
+        }
+    }
+
+    Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName where -ScriptBlock {
+        [System.Diagnostics.DebuggerStepThrough()]
+        param(
+            # The conditional expression that we are evaluating
+            [Parameter(Position=0, Mandatory=$true)]
+            [ValidateNotNull()]
+            [System.Management.Automation.ScriptBlock]
+            $Expression,
+
+            # The evaluation mode
+            [Parameter(Position=1)]
+            [ValidateNotNullOrEmpty()]
+            [ValidateSet('Default','First','Last','SkipUntil','Until','Split')]
+            [System.String]
+            $Mode = 'Default',
+
+            # The number of objects to return
+            [Parameter(Position=2)]
+            [ValidateNotNull()]
+            [ValidateRange(0,[System.Int32]::MaxValue)]
+            [System.Int32]
+            $NumberToReturn = 0
+        )
+        # Create an array to hold the results
+        $results = @()
+        switch ($Mode) {
+            'First' {
+                # Return the first N objects matching the expression (default to 1)
+                if ($NumberToReturn -eq 0) {
+                    $NumberToReturn = 1
+                }
+                $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                break
+            }
+            'Last' {
+                # Return the last N objects matching the expression (default to 1)
+                if ($NumberToReturn -eq 0) {
+                    $NumberToReturn = 1
+                }
+                $results = $this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn
+                break
+            }
+            'SkipUntil' {
+                # Skip until an object matches the expression, then return the first N objects (default to all)
+                $outputCount = 0
+                if ($NumberToReturn -eq 0) {
+                    $NumberToReturn = $this.Count
+                }
+                foreach ($item in $this) {
+                    if (($outputCount -eq 0) -and -not (Where-Object -InputObject $item -FilterScript $Expression)) {
+                        continue
                     }
-                    break
+                    if ($outputCount -lt $NumberToReturn) {
+                        $outputCount++
+                        $results += $item
+                    }
+                    if ($outputCount -eq $NumberToReturn) {
+                        break
+                    }
                 }
+                break
             }
-            if ($results) {
-                $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-                ,$results
+            'Until' {
+                # Return the first N objects until an object matches the expression (default to all)
+                $outputCount = 0
+                if ($NumberToReturn -eq 0) {
+                    $NumberToReturn = $this.Count
+                }
+                foreach ($item in $this) {
+                    if (Where-Object -InputObject $item -FilterScript $Expression) {
+                        break
+                    }
+                    if ($outputCount -lt $NumberToReturn) {
+                        $outputCount++
+                        $results += $item
+                    }
+                    if ($outputCount -eq $NumberToReturn) {
+                        break
+                    }
+                }
+                break
             }
-        }
-        $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'where')
-    }
-
-    Update-TypeData -Force -TypeName $ienumerableBaseType.FullName -MemberType ScriptMethod -MemberName MatchAny -Value {
-        [System.Diagnostics.DebuggerHidden()]
-        param(
-            [Parameter(Position=0, Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [System.String[]]
-            $Values
-        )
-        if ($args) {
-            $Values += $args
-        }
-        ,($this.where({([string]$_).MatchAny($Values)}) -as $this.GetType())
-    }
-    $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'MatchAny')
-
-    Update-TypeData -Force -TypeName $ienumerableBaseType.FullName -MemberType ScriptMethod -MemberName LikeAny -Value {
-        [System.Diagnostics.DebuggerHidden()]
-        param(
-            [Parameter(Position=0, Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [System.String[]]
-            $Values
-        )
-        if ($args) {
-            $Values += $args
-        }
-        ,($this.where({([string]$_).LikeAny($Values)}) -as $this.GetType())
-    }
-    $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'LikeAny')
-
-    Update-TypeData -Force -TypeName $ienumerableBaseType.FullName -MemberType ScriptMethod -MemberName ContainsAny -Value {
-        [System.Diagnostics.DebuggerHidden()]
-        param(
-            [Parameter(Position=0, Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [System.String[]]
-            $Values
-        )
-        [System.Boolean]$matchFound = $false
-        if ($args) {
-            $Values += $args
-        }
-        foreach ($item in $Values) {
-            if ($this -contains $item) {
-                $matchFound = $true
+            'Split' {
+                # Split based on condition, to a maximum count if one was provided (default to all)
+                $collection0 = @()
+                $collection1 = @()
+                if ($NumberToReturn -eq 0) {
+                    $NumberToReturn = $this.Count
+                }
+                foreach ($item in $this) {
+                    if (($collection0.Count -lt $NumberToReturn) -and
+                        (Where-Object -InputObject $item -FilterScript $Expression)) {
+                        $collection0 += $item
+                    } else {
+                        $collection1 += $item
+                    }
+                }
+                $collection0 = $collection0 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                $collection1 = $collection1 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                $results = @($collection0,$collection1)
+                break
+            }
+            default {
+                # Filter using the expression, to a maximum count if one was provided (default to all)
+                if ($NumberToReturn -eq 0) {
+                    $results = $this | Where-Object -FilterScript $Expression
+                } else {
+                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                }
                 break
             }
         }
-        $matchFound
-    }
-    $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'ContainsAny')
-
-    Update-TypeData -Force -TypeName $ienumerableBaseType.FullName -MemberType ScriptMethod -MemberName Sum -Value {
-        [System.Diagnostics.DebuggerHidden()]
-        param(
-            [Parameter(Position=0)]
-            [ValidateNotNull()]
-            [System.String]
-            $Property
-        )
-        $total = $null
-        if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
-            foreach ($item in $this) {
-                if ($Property) {
-                    $total += $item.$Property
-                } else {
-                    $total += $item
-                }
-            }
-        } elseif ($Property) {
-                $this.foreach({$total += $_.$Property})
-        } else {
-            $this.foreach({$total += $_})
+        # Return the results in an objectmodel collection to the caller
+        if ($results) {
+            $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+            ,$results
         }
-        $total
     }
-    $script:TypeExtensions.AddArrayItem($ienumerableBaseType.FullName,'Sum')
+}
+
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName MatchAny -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The regular expressions to compare the collection against
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $Values
+    )
+    # Add remaining arguments to the value collection for easier invocation
+    if ($args) {
+        $Values += $args
+    }
+    # Return any items in the collection matching the values provided
+    ,($this.where({([string]$_).MatchAny($Values)}) -as $this.GetType())
+}
+
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName LikeAny -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The wildcard strings to compare the collection against
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $Values
+    )
+    # Add remaining arguments to the value collection for easier invocation
+    if ($args) {
+        $Values += $args
+    }
+    # Return any items in the collection like the values provided
+    ,($this.where({([string]$_).LikeAny($Values)}) -as $this.GetType())
+}
+
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName ContainsAny -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The values to compare the collection against
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.Object[]]
+        $Values
+    )
+    # Add remaining arguments to the value collection for easier invocation
+    if ($args) {
+        $Values += $args
+    }
+    # Return true if the collection contains any of the values; false otherwise
+    $matchFound = $false
+    foreach ($item in $Values) {
+        if ($this -contains $item) {
+            $matchFound = $true
+            break
+        }
+    }
+    $matchFound
+}
+
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName ContainsAll -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The values to compare the collection against
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.Object[]]
+        $Values
+    )
+    # Add remaining arguments to the value collection for easier invocation
+    if ($args) {
+        $Values += $args
+    }
+    # Return true if the collection contains all of the values; false otherwise
+    foreach ($item in $Values) {
+        if ($this -notcontains $item) {
+            $false
+            break
+        }
+    }
+    $true
+}
+
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Sum -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The property to use when calculating the sum
+        [Parameter(Position=0)]
+        [ValidateNotNull()]
+        [System.String]
+        $Property
+    )
+    # Calculate the sum of the collection or of the values of a specific property
+    # in the collection
+    $total = $null
+    if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
+        foreach ($item in $this) {
+            if ($Property) {
+                $total += $item.$Property
+            } else {
+                $total += $item
+            }
+        }
+    } elseif ($Property) {
+        $this.foreach({$total += $_.$Property})
+    } else {
+        $this.foreach({$total += $_})
+    }
+    $total
 }
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUMxx+3UfQaMWSprziXfMRI0oF
-# yVegghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUQBNKdfZjuEWA5Vtr3XSKxSvF
+# vMqgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -401,23 +457,23 @@ foreach ($ienumerableBaseType in $ienumerableBaseTypes) {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFNfT
-# msjB2bhp5fGlrEjkoseN5Qy+MA0GCSqGSIb3DQEBAQUABIIBAD/UzF4nJCKuoO5k
-# qsCKSXBQZDu8Yy418/HjOHKzQ75HTkPS2Uk/9pagG/OJuc+3t59vgYMYcvX9PRhZ
-# dxHhzAA5LAZHlvoJt1RjJ2dD8o/D1IP0VI2GA1P0Xv1KgXDwqmfEmWU1er1fGuzW
-# wW4fTNln8RSkM0dz0vkO9BYwJxVmbuASOcjJOuoexuBE5KH1RFiytWt0DMHULUGv
-# q/+zIOgMWWnaP7DLE874RSCNm5GVaDA5od1T/ZVE7apLlc+WVWXgtfefvwnqDOGo
-# cLfAHoEtVK3Tib0L/AxzUV1Z8SkZTcY6NvxndCBMKGJC9dRLcYJBqFtdMP8erUNT
-# h9Eqg42hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLHC
+# RYF8SiIgMtdh2Wo5F2SfM3pEMA0GCSqGSIb3DQEBAQUABIIBAELfZKFq1AEKvayZ
+# /u4JTi0hViAxtiPw1sVrA7TqjkMbOsiYOlc10qLbkCVwsGwtaBCKjqmgjWBylelq
+# yiJ7BnfK6IQPUAhAPcDOpfnjbEES/XLVXrBb0vJ8w4WGK8kWWSimfUY3cOh51o/n
+# Tfdwd9bOlPm0sv+glI+44rEcpvnJsX67B6X4Ki5Q9+VCojB0W2/Qe/LvZt0Euk7b
+# vgZJtyvXsrkSoUG+IfYeQJB0hNjPnoPk/RDJGG0zzel2urOfGeNL2tuPKPUHg3VW
+# fdLUHkjzCARA/klLyDHfTQThsqI0rmMGmv7zJpA48bU+w2TwH6TifaPXFfV94q8Y
+# teUwzlehggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMxWjAjBgkqhkiG9w0BCQQxFgQUg0f4
-# bZnWI8BZ5wmLm1bnp8tyXNgwDQYJKoZIhvcNAQEBBQAEggEAk64nm2a8DonlVt0f
-# cWZWprsH+0Zs9vZwIrC2beks+pueuEOm+CftdJwZTQwx7Yue/65+2Kyeutt2ynU/
-# LysHEMIK2LUvSZ4n+zVZRMxHkyHqY157N7vS/9KytJFgHe94E1WrLSxINcdgvXji
-# p7403hYnGoLbo6E69EBHmisw95jJeVM5RoK2otfZVnFbHfouZK9xaMTSXLvpxlP3
-# /Wc5MmduBtU+Glct4mLdeL3nNmfZtFG4fywhDw7gfvFmd8NptTNKPr5kMSQhSytl
-# mwlhvXkV7URla9C2U3EjqsJ/ZezjGTxxVij42phBLNSut2ovdO9yO1CNBRVfDQ12
-# IFIbZw==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMTAwWjAjBgkqhkiG9w0BCQQxFgQUKs08
+# vOD3JnzYmuMmd7kFjtIiL6kwDQYJKoZIhvcNAQEBBQAEggEAHNk++60PTa/kepli
+# J1u/5NBZ/2qayKzealFFxBIYgq1iwCuV8CHFgc+laJMcuV7nMwPn4OJA2Q0V0Yug
+# JCQbsXcxXxe1Ftkn27aGBYjvFIrop061Os5XDG0JU4M4lDYXgxNp55xsN5Hcd8Rd
+# oXaquWheU6SlZkkKA2o7mbHHOaspDa1VSoHJWyj2ZH+Zxun6LRwWNVMzSpvLTkmq
+# jE9SPR8WaIvK0pYdkGvFCNIZECKK5IDVD/i9OazPzC1HPTzE1XsYgBMozkoQyISL
+# 3ZGtOv1KjUPg0PfGq2ReubFlmLp8YigmC8qsht1msZTvVMhPhzm+b0iyimdKn2RU
+# LWvZSg==
 # SIG # End signature block

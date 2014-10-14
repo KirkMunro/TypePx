@@ -1,63 +1,51 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the DebugPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSModuleInfo -MemberType ScriptMethod -MemberName GetLocalStoragePath -Value {
+$typeName = 'System.Management.Automation.PSModuleInfo'
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetLocalStoragePath -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
         # If true, returns the module local storage folder for the current user; otherwise, returns the folder for all users
         [System.Boolean]
         $CurrentUser = $false
     )
-    try {
-        #region Determine where to look for module local storage.
-
-        if ($CurrentUser) {
-            $mlsRoot = $env:LocalAppData
-        } else {
-            # When working with All Users, we use the ProgramData folder instead of the All Users
-            # profile.
-            $mlsRoot = $env:ProgramData
-        }
-
-        #endregion
-
-        #region Return the path based on the root folder and the module name.
-
-        "${mlsRoot}\WindowsPowerShell\Modules\$($this.Name)"
-
-        #endregion
-    } catch {
-        throw
+    # Determine where to look for module local storage
+    if ($CurrentUser) {
+        $mlsRoot = $env:LocalAppData
+    } else {
+        # When working with All Users, we use the ProgramData folder instead of the All Users profile.
+        $mlsRoot = $env:ProgramData
     }
+    # Return the path based on the root folder and the module name
+    Join-Path -Path $mlsRoot -ChildPath "WindowsPowerShell\Modules\$($this.Name)"
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSModuleInfo','GetLocalStoragePath')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQURGBkPuUSgy2UgpYQXFyP8EKa
-# jFegghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUCJyRJWF4RNAuCCCia38FGR3Y
+# 0TSgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -170,23 +158,23 @@ $script:TypeExtensions.AddArrayItem('System.Management.Automation.PSModuleInfo',
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFH+l
-# H7M9DC0BbcPtJ595+GZkx4KIMA0GCSqGSIb3DQEBAQUABIIBAE+1kipGFSQ8KlnG
-# PC7mYOp/gSxCAH39DW06fssh2JveOGi0jkT9w2P64QZqiGGZq+kQ7d/8SF0NNuNU
-# X/gCnEFeg8OwKrtQM2hT/QI1oCukTLEs/haB6ijNDoKYMA9B4UaJRCHm060H/fd4
-# aeiEq6PUNpMgnHd7H9TsYXVX5FyG2c6QU6OftPOntVtRpUpiJuquPTQ/Yvm/9Aig
-# gLSkJML7no4QnSueylArYWe/QtqmZsGpfkzPZb6qQwkR3usRZYAsdZMxyb1g2bFH
-# g6LdLPUBtmq4nK6KxFy7gVhkGdRPaZhDcFHheln445Qxr6SQXvHXOT1oFOS04SYd
-# I1dRYAKhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFB5L
+# RGWDipoqdHc4EooeWA/56+JZMA0GCSqGSIb3DQEBAQUABIIBAKgERmFj4pVXOvRf
+# elZdSCp46b/iCKZAEeXd1B7pFHZXFBX9clalv57Whi92lnWsoyo0NhCAgXjKPb6J
+# AsNs3vXP2JqmGwzbCjwIn3OzmPP3YN/Eyh5D5+snUqSrC5vUK6NUH3VloVTica2T
+# SduSWpzECCv+yHn//9cH/MnUqmyYUFRGP/gXGgO4n5wguAXtUnJLnub54QJ49FvV
+# ais7E79vUehobRaQkEPSLPIdpqHvncyBej3D0D+YJvzngox6gj1mtygXXWtp36qK
+# JhlxMhgFYND8GJaCmBKvnkbLRNhsp93b7WvhD6cgQLB5ZFOo1TSZ71mbmJtuKuK/
+# xGgeuuyhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMxWjAjBgkqhkiG9w0BCQQxFgQU2qKD
-# DRTwWm3fQC/1JAFtaz3Z+MgwDQYJKoZIhvcNAQEBBQAEggEAOk0ai+bz22hcVmuO
-# mbZCOMKr+xwJSSMA49ixnYTpzuj9PA4hF7lZOTxwoh+BvnTvoWW5DJBIwePssEst
-# DCO0r4WCG/TTZ0NgkTisqcpOXDXBqBOVjvoOkVy6AQfAU25yEd4inr6U0taeKgSK
-# cLtAk5iXrv26ZwqRuzV54kAj3qfuEhpRFc5h4+IT40nQ34fN5h+d1b1+Yy+FYe5Z
-# j7Rsc3JC4MmRpUNm8diFpmcbsuEinJzkHhhi4q4BQnQHPfMcS0MYMhd/S4JRaNEz
-# 5fh8NRxL94RuWtNLAk6sguKxc6DIxXJEQi944z++7cx8PkqpymclXoADbIKXPb3u
-# K2j33g==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMTAwWjAjBgkqhkiG9w0BCQQxFgQUp4rv
+# PGkG/B2dQaLRIZbhl7QzZhQwDQYJKoZIhvcNAQEBBQAEggEAdWK6Pkh1g4h0kdw4
+# LnBpKYBNA1OQsaDz21w+DRSED10QsmQeAiYFCyYNM8Tl+7D2oZcHkNYZLpTpZDRM
+# wg+hq3TZhzPAlZQpMXctuMK/btpdTA1ZNWK8Ef5Emx/OiyRPmwxzHIKgdvBk4Oq1
+# s1Xi4Yt5ozimJTwx5vL83ghMYTptI+lSphdI5zz6cWOd3bz7vrQPukdUkc418rrz
+# H4hOH88zgHRTUpnecpk1GTcAd8oksCwIyT3eeWXeQkqoW6elxF1avvui4Fk54zgn
+# 84+FllMajFEa0rPe3htoXif30cwprnxE76TRDVLNvoUmJIasP1NHTO2lzzhvdVyH
+# 9cmzpQ==
 # SIG # End signature block

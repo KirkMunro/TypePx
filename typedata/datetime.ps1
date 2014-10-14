@@ -1,61 +1,90 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the DebugPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName FromNow -Value {
-    if (($this.PSTypeNames -contains 'System.TimeSpan#Years') -and
-        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
-        (Get-Date).AddYears($this.TotalYears)
-    } elseif (($this.PSTypeNames -contains 'System.TimeSpan#Months') -and
-        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
-        (Get-Date).AddMonths($this.TotalMonths)
-    } else {
-        (Get-Date).Add($this)
-    }
-}
-Update-TypeData -Force -TypeName System.TimeSpan -MemberType ScriptProperty -MemberName Ago -Value {
-    if (($this.PSTypeNames -contains 'System.TimeSpan#Years') -and
-        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
-        (Get-Date).AddYears(-$this.TotalYears)
-    } elseif (($this.PSTypeNames -contains 'System.TimeSpan#Months') -and
-        (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
-        (Get-Date).AddMonths(-$this.TotalMonths)
-    } else {
-        (Get-Date).Subtract($this)
-    }
-}
-$script:TypeExtensions.AddArrayItem('System.TimeSpan',@('FromNow','Ago'))
+$typeName = 'System.TimeSpan'
 
-Update-TypeData -Force -TypeName System.DateTime -MemberType ScriptProperty -MemberName InUtc -Value {
-    $this.ToUniversalTime()
+Add-ScriptPropertyData -TypeName $typeName -ScriptPropertyName FromNow -GetScriptBlock {
+    try {
+        # Return the relative time based on the information we have in the TimeSpan object
+        if (($this.PSTypeNames -contains 'System.TimeSpan#Years') -and
+            (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+            (Get-Date).AddYears($this.TotalYears)
+        } elseif (($this.PSTypeNames -contains 'System.TimeSpan#Months') -and
+            (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+            (Get-Date).AddMonths($this.TotalMonths)
+        } else {
+            (Get-Date).Add($this)
+        }
+    } catch {
+        if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+            $PSCmdlet.ThrowTerminatingError($_)
+        } else {
+            throw
+        }
+    }
 }
-$script:TypeExtensions.AddArrayItem('System.DateTime','InUtc')
+
+Add-ScriptPropertyData -TypeName $typeName -ScriptPropertyName Ago -GetScriptBlock {
+    try {
+        # Return the relative time based on the information we have in the TimeSpan object
+        if (($this.PSTypeNames -contains 'System.TimeSpan#Years') -and
+            (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+            (Get-Date).AddYears(-$this.TotalYears)
+        } elseif (($this.PSTypeNames -contains 'System.TimeSpan#Months') -and
+            (($this.Hours + $this.Minutes + $this.Seconds + $this.Milliseconds) -eq 0)) {
+            (Get-Date).AddMonths(-$this.TotalMonths)
+        } else {
+            (Get-Date).Subtract($this)
+        }
+    } catch {
+        if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+            $PSCmdlet.ThrowTerminatingError($_)
+        } else {
+            throw
+        }
+    }
+}
+
+$typeName = 'System.DateTime'
+
+Add-ScriptPropertyData -TypeName $typeName -ScriptPropertyName InUtc -GetScriptBlock {
+    try {
+        # Return the current time in UTC
+        $this.ToUniversalTime()
+    } catch {
+        if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+            $PSCmdlet.ThrowTerminatingError($_)
+        } else {
+            throw
+        }
+    }
+}
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUmH1CmZKQNS5WE9DoqdxF/RBq
-# j2+gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHF7OM/ajEN5JYZhd+GVRDaCe
+# fPigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -168,23 +197,23 @@ $script:TypeExtensions.AddArrayItem('System.DateTime','InUtc')
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFO9h
-# FeuTGZb41V/jbWBv7hl/2LB6MA0GCSqGSIb3DQEBAQUABIIBAIWRnpVQyyJp5xDh
-# lrquQcP9CXbYBiI5GRek0mjYymFWTZ40TxZM2d25cVD4kYO+wHE7Tink5kK38KwY
-# c9xMfA815d2YGCAn6ECp+Vei3sdlXZ2YAKrYq3QIZD7XfoFWXh5vh8C9LO+85N06
-# 3MS1SVFv7jl6JNwYBGlus0WW31JRfD315l7uxbzvTz7ATzi1ugXzVyjntSPMVa7A
-# rFrHpdkrQNTYCm2oA89LgtZZSgGZ8ZW96rSYpkwMYYrRjD3aHPxOr0IPC6yl/2RI
-# /c0uL3F1tWZ3g4SA9wJs9Q89+i/5XMfAfOA5UbrCB741FvXcIppPBjHFHXmn3KfA
-# g5BKMlehggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFE9j
+# 06QnJrVkWMZygnVuKickaCW5MA0GCSqGSIb3DQEBAQUABIIBAG1nPXFLdnY6J0rt
+# nkOq87sPdj4UoYNAcdd3osupnQ2UKbu1FMfnjRqDACyNIZqY2QDxTjOY/o98g+TN
+# VinwXYy+oSg9pPOgMZlfnFf2BhitlZK/KKuLtvCVSypbm0I/whxr/oTM8RfhUIVk
+# JT+IBA6i7dNEMUSnQW/Ef4/pK4okKo/PutsXYxJvB45iPu98B+X9ecXKeuMCKHja
+# jaKjfNKDeqNcuct7SJusJcVsGKhFOa/Sj/Nn07NLX7JPVeZ+oCKmNdLHQ7NVSS5X
+# x/fhyEbFpyFK9ccLdCfiJEbI72mjntL94m93CHotJZSXznbNJFK6chTPAmttfroZ
+# Ule3WhChggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMxWjAjBgkqhkiG9w0BCQQxFgQUnqEC
-# SzXvNFUVgQjz05CaU0xj3JAwDQYJKoZIhvcNAQEBBQAEggEAUr5z19vysc/fRoUA
-# 5420Y+HWYEeoKgDo/EjgqV9BQSJ7206iWXPeDzi4rKCcICdvxVeMsHev4UtVcgj+
-# Kb+a0KAezyWVZ59VKylw/FnNgU68R80pqwAkYoGMbaFQwIE/rJVkhp3YBUXXMWi+
-# 8O/v3/q+VE/M9OsACyP2OhYPNa2fXS8gZ0RmdwXUVKu1WhYjmSpksi8Uw6sEkbbx
-# cN2fV3lGeWTsnSArmLhYAAvd2IFJoo+3e+pSG+ewoToSZLuQKPVme39LbG+U6WwC
-# 42oBA6SgpoZo9Vf55MHw5N5qNzS1+APhV93oXrXh3CvnL0dzV6IN8XkmCSBGExMu
-# GNmcHg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMDU5WjAjBgkqhkiG9w0BCQQxFgQU0QmS
+# XjIWCfG/fb5TkUG9JERnn9cwDQYJKoZIhvcNAQEBBQAEggEACrecHhT3dqcmsbd4
+# Brxkcma/76sFNJwePIN9ayfrEImtR7ijKP8+zYp/Lxee6amktmhR6lNgVrSCgYLj
+# m9U5b6C5PdgZQJ0XWv6pCLW4AzBr92+AzCAq8uhkjeJYpOrBTgWooFtkQhabxw4a
+# uQZKD5YhnvT5ID/zFUhk97QRwxplGMLV1zz+eZmE50hlNur/h29ZbcSNBCN5WraQ
+# rNZKbAe8+jhQuRSAcZC3da+YRMOcaT3bo10Nx8tPVEvHDYi/9rKckvP+62+UNWrG
+# vzbgz+EjJtxN/UwmjUNqPTdFd3jdxoWFqWz1gxR+N8u+bAti+f7IetkWHPTRoN7Q
+# QqZL9g==
 # SIG # End signature block

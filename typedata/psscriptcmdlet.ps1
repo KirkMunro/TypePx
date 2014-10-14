@@ -1,36 +1,51 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the DebugPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ThrowException -Value {
+$typeName = 'System.Management.Automation.PSScriptCmdlet'
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ThrowException -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
-        [System.Exception]$Exception,
-        [System.Management.Automation.ErrorCategory]$ErrorCategory,
-        [System.Object]$RelatedObject = $null
+        # The exception to be thrown
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.Exception]
+        $Exception,
+
+        # The category of the error
+        [Parameter(Position=1, Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.Management.Automation.ErrorCategory]
+        $ErrorCategory,
+
+        # An object related to the error
+        [Parameter(Position=2)]
+        [System.Object]
+        $RelatedObject = $null
     )
     try {
+        # Throw an error record wrapping the exception
         $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList @(
             $Exception
             $Exception.GetType().Name
@@ -42,32 +57,58 @@ Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -Me
         $this.ThrowTerminatingError($_)
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ThrowException')
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ThrowError -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ThrowError -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
-        [System.String]$Message,
-        [System.String]$ExceptionTypeName,
-        [System.Management.Automation.ErrorCategory]$ErrorCategory,
-        [System.Object]$RelatedObject = $null
+        # The error message to be reported to the caller
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $Message,
+
+        # The type of exception to be thrown
+        [Parameter(Position=1, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $ExceptionTypeName,
+
+        # The category of the error
+        [Parameter(Position=2, Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.Management.Automation.ErrorCategory]
+        $ErrorCategory,
+
+        # An object related to the error
+        [Parameter(Position=3)]
+        [System.Object]
+        $RelatedObject = $null
     )
     try {
+        # Throw an exception
         $exception = New-Object -TypeName $ExceptionTypeName -ArgumentList $Message
         $this.ThrowException($exception, $ErrorCategory, $RelatedObject)
     } catch {
         $this.ThrowTerminatingError($_)
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ThrowError')
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ThrowCommandNotFoundError -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ThrowCommandNotFoundError -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
-        [System.String]$CommandName,
-        [System.Object]$RelatedObject = $null
+        # The name of the command that was not found
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $CommandName,
+
+        # An object related to the error
+        [Parameter(Position=1)]
+        [System.Object]
+        $RelatedObject = $null
     )
     try {
+        # Throw a command not found exception
         $message = $this.GetResourceString('DiscoveryExceptions','CommandNotFoundException') -f $CommandName
         $exception = New-Object -TypeName System.Management.Automation.CommandNotFoundException -ArgumentList $message
         $exception.CommandName = $CommandName
@@ -76,15 +117,28 @@ Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -Me
         $this.ThrowTerminatingError($_)
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ThrowCommandNotFoundError')
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ValidateParameterDependency -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ValidateParameterDependency -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
-        [System.String]$ParameterName,
-        [System.String[]]$RequiredParameterName
+        # The name of the parameter that requires other parameters in the same parameter set when it is used
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $ParameterName,
+
+        # The list of names of other required parameters
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $RequiredParameterName
     )
+    # Make sure we work like a function, without requiring array input.
+    if ($args) {
+        $IncompatibleParameterName += $args
+    }
     try {
+        # If the current parameter set contains missing required parameters, throw an exception
         if ($this.MyInvocation.BoundParameters.ContainsKey($ParameterName) -and
             -not @($this.MyInvocation.BoundParameters.Keys).ContainsAny($RequiredParameterName)) {
             $message = "The following parameters are required when using the ${ParameterName} parameter: $($RequiredParameterName -join ',')."
@@ -95,15 +149,28 @@ Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -Me
         $this.ThrowTerminatingError($_)
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ValidateParameterDependency')
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName ValidateParameterIncompatibility -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ValidateParameterIncompatibility -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
-        [System.String]$ParameterName,
-        [System.String[]]$IncompatibleParameterName
+        # The name of the parameter that is not compatible with other parameters in the same parameter set
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $ParameterName,
+
+        # The list of names of other incompatible parameters
+        [Parameter(Position=1, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $IncompatibleParameterName
     )
+    # Make sure we work like a function, without requiring array input.
+    if ($args) {
+        $IncompatibleParameterName += $args
+    }
     try {
+        # If the current parameter set contains incompatible parameters, throw an exception
         if ($this.MyInvocation.BoundParameters.ContainsKey($ParameterName) -and
             @($this.MyInvocation.BoundParameters.Keys).ContainsAny($IncompatibleParameterName)) {
             $message = "The following parameters may not be used in combination with the ${ParameterName} parameter: $($IncompatibleParameterName -join ',')."
@@ -114,30 +181,20 @@ Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -Me
         $this.ThrowTerminatingError($_)
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','ValidateParameterIncompatibility')
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName GetSplattableParameters -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetSplattableParameters -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
         # The names of the parameters that you want to splat into other commands.
         [System.String[]]$ParameterName = @()
     )
-    #region Make sure we work like a function, without requiring array input.
-
+    # Make sure we work like a function, without requiring array input.
     if ($args) {
         $ParameterName += $args
     }
-
-    #endregion
-
-    #region Define the hashtable that will contain the pass thru parameters.
-
+    # Define the hashtable that will contain the pass thru parameters.
     $splattableParameters = @{}
-
-    #endregion
-
-    #region Load the parameters that will be passed through into the hashtable.
-
+    # Load the parameters that will be passed through into the hashtable.
     if (-not $ParameterName) {
         # If no specific parameters were requested, splat all bound parameters.
         $splattableParameters = $this.MyInvocation.BoundParameters
@@ -149,22 +206,14 @@ Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -Me
             }
         }
     }
-
-    #endregion
-
-    #region Return the hashtable to the caller.
-
+    # Return the hashtable to the caller.
     $splattableParameters
-
-    #endregion
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','GetSplattableParameters')
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName GetBoundPagingParameters -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetBoundPagingParameters -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
-    #region Return the paging parameters in a splattable hashtable.
-
+    # Return the paging parameters in a splattable hashtable.
     $commandMetadata = $this.MyInvocation.MyCommand -as [System.Management.Automation.CommandMetadata]
     if (-not $commandMetadata -or -not $commandMetadata.SupportsPaging) {
         # If paging is not supported for this command, return an empty hashtable.
@@ -174,16 +223,12 @@ Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -Me
         $pagingParameterNames = Get-Member -InputObject $this.PagingParameters -MemberType Property | Select-Object -ExpandProperty Name
         $this.GetSplattableParameters($pagingParameterNames)
     }
-
-    #endregion
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','GetBoundPagingParameters')
 
-Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -MemberType ScriptMethod -MemberName GetBoundShouldProcessParameters -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetBoundShouldProcessParameters -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
-    #region Return the should process parameters in a splattable hashtable.
-
+    # Return the should process parameters in a splattable hashtable.
     $commandMetadata = $this.MyInvocation.MyCommand -as [System.Management.Automation.CommandMetadata]
     if (-not $commandMetadata -or -not $commandMetadata.SupportsShouldProcess) {
         # If should process is not supported for this command, return an empty hashtable.
@@ -192,15 +237,12 @@ Update-TypeData -Force -TypeName System.Management.Automation.PSScriptCmdlet -Me
         # Otherwise, create a splattable hashtable containing all bound should process parameters.
         $this.GetSplattableParameters(@('Confirm','WhatIf'))
     }
-
-    #endregion
 }
-$script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet','GetBoundShouldProcessParameters')
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUOrpCMV1NSeeH/pxfONbCyvHP
-# 5lSgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUyz4SvDOjD1bxibFmtP8Rhma+
+# zxagghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -313,23 +355,23 @@ $script:TypeExtensions.AddArrayItem('System.Management.Automation.PSScriptCmdlet
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPGR
-# ZRUvyTou3P/VCiHNGv9AETo4MA0GCSqGSIb3DQEBAQUABIIBABv95NWWb32Jhrin
-# DraNFIPMRVF5Ywya/vmF1ElWwGKjVwgt8u5UUdj4FmX8be1LVM400zAsmSIlQwJr
-# osAkbD1BOrxxDzOx6gF/pIxkdEz5HEKE4W//k9NvkTHMZTuwVuGCaxec7tDnxsrJ
-# 1NxqSKOtzMzT92FHQVkYyWW0M/kmm9nluhGI5d3b/i2fhoKu8IFwkyfRF4yyXeiP
-# XfvrFU6kAIH9sCqQGeC7oAb5c9wf8jKGgOGB9QetY27e+fqd6M2qrBMeDCRxxekX
-# M7Sv4reUWCuccQdtrAezdLlCnH2ZD5d8o7D+jXqvjjPC2rCac7MxsebydPd6ihQ9
-# dI984lShggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHQE
+# qAXbYYuqfTTzEGUb2Ow3m4tlMA0GCSqGSIb3DQEBAQUABIIBALRHiW7DQKWPuNnp
+# gmzB1sBB68aK0eFWVfND5Uov6SSQqNwolWh/3+KfksBvzL2X+/98TfREDqAoQEKH
+# qSqLh2UvIRIK4Hfv+8XVENpGv5cYL9coxu1SqcAvTopX010J3LWwv2apWhihk6Gy
+# uLYvN16Oy7+PDZEw7mI5Ga0CNSD4M2Tn+tO14VYXDYNAj64bFPQt70wwyPYVyZaO
+# lQqotISJD8Jcs6Kv/ibYtJ8L1TrOeddTOs1uj8MTbE2gn9lYCa4pKFSgxAebhZNg
+# Wsiwm99pGqVRu2GCFRQGr0Ozu37YKC8vK76R0PGLnlla3xCatYRroFNF7N6IK5s7
+# 7dkOEcOhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMxWjAjBgkqhkiG9w0BCQQxFgQUQI3H
-# qjr+VF6yf+aYDaUL3ovL52QwDQYJKoZIhvcNAQEBBQAEggEAUzIvir3NydJDipg1
-# Rfdsfgm9jZy49suMjYpP0JvQiuXCVCkL90/FwovbWaQbV7ROb5tJ2/4lZZ9fK0IJ
-# A4RKuORahe1PPhpR1DFEyLxT+cBP4V41u/zUNONP8S2TXXZb045+vEOT9mGa5FaF
-# ywgVTJ4RIr2HKXTkq6pvbH3Cb7AhadpN3+VKy6EGwEVfZHQYNbn66IKfSgjSd2Na
-# pwpVlqtb4++PBHTnSF9B9NufyqFatSfVAdh8hVyqVjUlA4Yyu93nnMCkAtjd+oOi
-# UEnHlUPSBQiZqP3Y6tsOIU+NKg9msBazG+9PjAxucgtazg7f8moF5MdAcPWunBtN
-# z/uU1g==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMTAwWjAjBgkqhkiG9w0BCQQxFgQUJPDd
+# YwDDlk+28DsNltt3+sYthVQwDQYJKoZIhvcNAQEBBQAEggEAYpy6wzBCGl/IgcDi
+# emYl3M/MHX9KOu0N4RcDLtKj3j+Qc68BF1wfbaQsUabw3eLjHXfaGcDYfPlAwfhl
+# rWoP09NEGW7Q6U/qAL+QI9zM+jOxPVaXIKawb7xmbzGONcwNXqpdPTiQ0OMk5BCZ
+# Cx8YtvbUBD5xcY0oTnWRlR5L+YDKhopQg3Rgb1Nbfl5h+54DVUGv+SjtiZIF1u9k
+# o8H9z6AjTWGo81iNuUKfOHfzp84PGiUEi4i3rMySs3zXTvS5iuA/94DgDPYBWpPj
+# OOq67+WxO3yWqg1jUeTopu4qLk1ihixLi9xkBTgqS4zaB6kt1/mdqTv4j5tpRHGP
+# xdP9dQ==
 # SIG # End signature block

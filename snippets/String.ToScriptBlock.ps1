@@ -1,139 +1,43 @@
-﻿<#############################################################################
-The TypePx module adds properties and methods to the most commonly used types
-to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and
-self-documenting. TypePx also provides commands to manage type accelerators.
-Type acceleration also contributes to making scripting easier and they help
-produce more readable scripts, particularly when using a library of .NET
-classes that belong to the same namespace.
-
-Copyright 2014 Kirk Munro
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-#############################################################################>
-
-<#
+﻿<#
 .SYNOPSIS
-    Adds or updates a type accelerator in the current session.
+    Convert a string into a script block
 .DESCRIPTION
-    The Add-TypeAccelerator command adds or updates a type accelerator in the current session.
-
-    By default, Add-TypeAccelerator will add a type accelerator to the current session, overwriting the type accelerator if it already exists. You can use the NoClobber parameter to prevent Add-TypeAccelerator from overwriting a type accelerator that already exists.
-.INPUTS
-    System.Type
-.OUTPUTS
-    TypeAccelerator
-.NOTES
-    To add accelerators for an entire namespace, use the Use-Namespace command.
-.EXAMPLE
-    PS C:\> Add-TypeAccelerator -Name CommandMetadata -Type System.Management.Automation.CommandMetadata
-    PS C:\> New-Object -TypeName CommandMetadata -ArgumentList (Get-Command -Name Stop-Service)
-
-    This command adds a type accelerator for the System.Management.Automation.CommandMetadata class and then uses that accelerator to get the command metadata for the Stop-Service command.
-.LINK
-    Get-TypeAccelerator
-.LINK
-    Remove-TypeAccelerator
-.LINK
-    Set-TypeAccelerator
-.LINK
-    Use-Namespace
+    Convert a string into a script block, optionally using a set of variable values that will be applied to the string before the conversion.
 #>
-function Add-TypeAccelerator {
-    [CmdletBinding(SupportsShouldProcess=$true)]
-    [OutputType('TypeAccelerator')]
-    param(
-        # The name of the type accelerator.
-        [Parameter(Position=0, Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]
-        [System.String]
-        $Name,
+[System.Diagnostics.DebuggerHidden()]
+param(
+    # The string you are converting to a script block.
+    [System.String]
+    $String,
 
-        # The type that the type accelerator will reference.
-        [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true)]
-        [ValidateNotNull()]
-        [System.Type]
-        $Type,
+    # An optional hashtable of variable values that you want to use during the conversion.
+    [System.Collections.Hashtable]
+    $VariableValues = @{}
+)
+#region Update the local variables if we were passed in any variable values.
 
-        # Will not overwrite a type accelerator if one already exists with the same name. By default, if a type accelerator exists with the same name, Add-TypeAccelerator overwrites the type accelerator without warning.
-        [Parameter()]
-        [System.Management.Automation.SwitchParameter]
-        $NoClobber,
-
-        # Returns an object representing the type accelerator that was added. By default, this command does not generate any output.
-        [Parameter()]
-        [System.Management.Automation.SwitchParameter]
-        $PassThru
-    )
-    process {
-        try {
-            #region Add the type accelerator if it does not exist or of NoClobber was not used.
-
-            if ((-not $script:typeAcceleratorsType::Get.ContainsKey($Name)) -or
-                (-not $PSCmdlet.MyInvocation.BoundParameters.ContainsKey('NoClobber')) -or
-                (-not $NoClobber)) {
-                if ($PSCmdlet.ShouldProcess($Name)) {
-                    # Since this class changed between versions, we need to figure out which approach to take
-                    if (Get-Member -InputObject $script:typeAcceleratorsType -Name AddReplace -Static -ErrorAction Ignore) {
-                        #region Add the new type accelerator.
-
-                        $script:typeAcceleratorsType::AddReplace($Name, $Type)
-
-                        #endregion
-                    } else {
-                        #region Remove any existing type accelerator with the same name.
-
-                        if ($script:typeAcceleratorsType::Get.ContainsKey($Name)) {
-                            $script:typeAcceleratorsType::Remove($Name) > $null
-                        }
-
-                        #endregion
-
-                        #region Add the new type accelerator.
-
-                        $script:typeAcceleratorsType::Add($Name, $Type)
-
-                        #endregion
-                    }
-                }
-
-                #region Pass the type accelerator object through if requested.
-
-                if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('PassThru') -and $PassThru) {
-                    Get-TypeAccelerator -Name $Name
-                }
-
-                #endregion
-            }
-
-            #endregion
-        } catch {
-            $PSCmdlet.ThrowTerminatingError($_)
-        }
-    }
+foreach ($key in $VariableValues.Keys) {
+    Set-Variable -Name $key -Value $VariableValues.$key
 }
 
-Export-ModuleMember -Function Add-TypeAccelerator
+#endregion
 
-New-Alias -Name atx -Value Add-TypeAccelerator -ErrorAction Ignore
-if ($?) {
-    Export-ModuleMember -Alias atx
-}
+#region Invoke a snippet to expand the string.
+
+$expandedString = Invoke-Snippet -Name String.Expand -Parameters @{String = $String}
+
+#endregion
+
+#region Return the script block created from the expanded string.
+
+[System.Management.Automation.ScriptBlock]::Create($expandedString)
+
+#endregion
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU8Xvsu6xh8xMY+I/VsJHeckMu
-# ViugghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUKpWZkFRU7vLcYMVzbslL5ogF
+# F8WgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -246,23 +150,23 @@ if ($?) {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCeP
-# X9HQJCdrRph2E6sbVmZu0PLVMA0GCSqGSIb3DQEBAQUABIIBAJlNO7mnVQOdIhgw
-# gRfKLbGr4KHQJsLMQtBv82e1otQiSrdpZPxrb9KpAhMJ6MnuQ0wXadUEDjKe2luz
-# AxCdyHDHedrPIjmexOSFB8eK71DkPRHQPSU3szwsDAM8Cqk1KHarQPIxtojIo+sn
-# R7NXv03qQ9xfaYxzrORmgVy8w9uu9+RSTzyJ2kCq7mmLr3q7+NNvNF7Nice+yfR3
-# ZRhKWtW5L4f2nXbatXFHLBWL63WfGdm4hPba8FxUsTXaqFrcuJz4OjnTztHPGyIU
-# Y1oqoTD97bBolqfCJc1aWjYLKl3qUGwrDkj04uBI8RiBsINpX5JBuOs9+20GdI8Z
-# beka692hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFD8X
+# TCQILRh1RMedqUws+9/U33iGMA0GCSqGSIb3DQEBAQUABIIBAE9aQ00/IFQv4sXm
+# 20ywRif8FbUQfmAOEvasIse828Sm+NzXCk72ZCUXggH1H8jM7cKpoM5kHzFNF+/u
+# 9esyrZy+lSIggYI55ccnJRpe9UYCJr3Qvstz6NYFqce+COLeNPUJmJWmXS8ZHlG6
+# FcSZCwaOwstJSCVrEfZRMFwrjv/VpP/doKFJadf7c5LbSxH1UKS0beWbLxsbw8kD
+# lmA6o/XLYeReYdJ3SkcCuHTPa+7Ulr3mgwD98X1N5xe0BYf0ppa6YskHT+hkTIQC
+# oHuXgoKDHQZYvfjhxmkEz4sc4W4lUywoHSwqUCsDJ6uX3Mf7KH1ZmMGoTXj74siY
+# k3L/bmuhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMDU4WjAjBgkqhkiG9w0BCQQxFgQUhfAx
-# +Q+Cw0qxUxAZrJ/c1itmzEYwDQYJKoZIhvcNAQEBBQAEggEACEn6Z+d6hul2gh4I
-# o1QkyxcodvW7YFMpof/df0KkZq8Jd82IqMwjWLI2czC7QyZ8mlR5tQC6Ln8xwYgs
-# s8GmHD0dXSbs0jnlTah6ZB1EcJPOqsKLNzxeld261G49LkqHB1ZvFhRmKTZy5H1J
-# uZCUtPBfKL8puWa4tA1QD1in1R3hOtV8Z9x/KPfZA8ES2Bc03PgpXMDfzEIFV5ZX
-# Kn5fNTm9jfMDodH6m023lVCt5Nsn97d8wE7TgjfCAgeXDyW2X1dAKe0+t8Q+RTsU
-# QSBBFrYMBLUrXwNO9YWg4YAYC8GMc3jmu3q/PFQSAEj1EaCj19FL26+Cvs05YM55
-# Iko+sg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMDUzWjAjBgkqhkiG9w0BCQQxFgQUTlYG
+# VGY+LztFS8DLcvi3oKfWlbMwDQYJKoZIhvcNAQEBBQAEggEAGgA/6XUyLm+0pGbc
+# 8oSwL/mkxq/gCgX3fSGqgxilpx+eoP/FWcrXxc0wuZf8lASO0ABtBsvoDfPOZkmr
+# oEsCTogkAYVeq1Y0WC2psLpvE6lNDfvkxy5szGmS/ot062v/KR0PbFDaOEvKid9l
+# Z/cwbN/jShklIlZgYXE3nSgqqz0jzMh+uYdg0G2egK5iAWtB8eF4SckqX09ptQUu
+# 5maC9tP7CHZH9imnEQ0staPvsvBL7SGsyGMM7R/MAMAtXDs8Y7LkfrbFNm1QLcau
+# WcRWmFt6VAkXM7VQ9su8yvsCBIa1pRvufD5u6DKGmqNRzSTkzdMPUOSabkOdWKsv
+# EYl7sQ==
 # SIG # End signature block

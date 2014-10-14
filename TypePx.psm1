@@ -1,26 +1,25 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the ScsmPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
 #region Initialize the module.
@@ -29,9 +28,11 @@ Invoke-Snippet -Name Module.Initialize
 
 #endregion
 
-#region Load the TypeAccelerators internal type.
+#region Import helper (private) function definitions.
 
-[System.Type]$typeAcceleratorsType = [System.Management.Automation.PSObject].Assembly.GetType('System.Management.Automation.TypeAccelerators', $true, $true)
+Invoke-Snippet -Name ScriptFile.Import -Parameters @{
+    Path = Join-Path -Path $PSModuleRoot -ChildPath helpers
+}
 
 #endregion
 
@@ -41,15 +42,31 @@ $TypeExtensions = @{}
 
 #endregion
 
-#region Import type extensions.
+#region Add type extension definitions to our hashtable.
 
-Invoke-Snippet -Name ScriptFile.Import.Ordered -Parameters @{
+Invoke-Snippet -Name ScriptFile.Import -Parameters @{
     Path = Join-Path -Path $PSModuleRoot -ChildPath typedata
-    Order = @(
-        'hashtable.ps1'
-        'string.ps1'
-    )
 }
+
+#endregion
+
+#region Import the type extensions.
+
+$TypeDataCollection = @()
+foreach ($key in $TypeExtensions.Keys) {
+    $typeData = New-Object -TypeName System.Management.Automation.Runspaces.TypeData -ArgumentList $key
+    foreach ($typeMemberData in $TypeExtensions.$key) {
+        $typeData.Members.Add($typeMemberData.Name, $typeMemberData)
+    }
+    $TypeDataCollection += $typeData
+}
+Update-TypeData -TypeData $TypeDataCollection
+
+#endregion
+
+#region Load the TypeAccelerators internal type.
+
+[System.Type]$TypeAcceleratorsType = [System.Management.Automation.PSObject].Assembly.GetType('System.Management.Automation.TypeAccelerators', $true, $true)
 
 #endregion
 
@@ -104,11 +121,15 @@ $PSModule.OnRemove = {
             continue
         }
         $typeData = $Host.Runspace.InitialSessionState.Types[$index].TypeData
-        if ($typeData.Members.Keys.Count -ne 1) {
+        if (-not $TypeExtensions.ContainsKey($typeData.TypeName)) {
             continue
         }
-        if ($TypeExtensions.ContainsKey($typeData.TypeName) -and
-            ($TypeExtensions[$typeData.TypeName] -contains $typeData.Members.Keys[0])) {
+        if ($typeData.Members.Count -eq 0) {
+            continue
+        }
+        $etsMembersAdded = @($TypeExtensions[$typeData.TypeName] | Select-Object -ExpandProperty Name)
+        $etsMembersFound = @($typeData.Members.Keys | ForEach-Object {$_})
+        if (-not (Compare-Object -ReferenceObject $etsMembersAdded -DifferenceObject $etsMembersFound)) {
             $indices += $index
         }
     }
@@ -130,8 +151,8 @@ $PSModule.OnRemove = {
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUxk+8fL1WhZg9Nxff9O344Ek8
-# C8qgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQURDc3lhDtB8vP0NdxveKNhyVu
+# 3j+gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -244,23 +265,23 @@ $PSModule.OnRemove = {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFDmr
-# 2X33MPbto3TONuJDxGNyipaIMA0GCSqGSIb3DQEBAQUABIIBADdWlsCoufize6rF
-# Zh6tzbXYkGjkUIc6PifPBrKdCx9qMct6rQQWixB0b1IrcJ9SnxaH9oHA0V5Srr7Q
-# Oa2khBKUlyvxxoFr33rEDPmMaHVlhZqz6ckB8ABR5tQ/iqr10f7F4Pi7ec/SWb+u
-# +HQ0ueaMq5rKM6mqiWU6MNDrTtHpOok6zqifUIqaqwfIjT9stMRrD97DPJBQJvVe
-# 31mnMR25ePliSxHHv4WLFA0ZFq137WuscQRbKqGsfeRTD+/AAt2pBUaWCj9uY2Kd
-# dxvMeekr6/ZMO9itM9qar+m4aBjZqle4gmLp9F0qHNxirtnnqlbuHAbN0tpemD0p
-# 6SeKFbKhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFM5q
+# rGh6KG8uBNvlGc9Me6SOlbXwMA0GCSqGSIb3DQEBAQUABIIBADdtFm7yN8tv6EkN
+# SsVWPJ3BKlf3HNgqXAAOuePamq/a3btTBprXkXxBWt6DWUTAuwf5z18HRv1mGRCM
+# n/YwTeHEZbie9vmPnPI93zXlS3bgwKryv8KAAJbsJn1BUuhJCjhRglYCytRnLMnf
+# bRKiad3Lh8pVYP6RYONxlw401VBAV+a/T8P0HQENT9S7n+f90hkMsvg8BDrAgeuV
+# Ao52Mgdm5QD0Bvnc6yPRIyCiTrf1yYREb1H3HXyUQzo7zLEtIHiVVYj+uEB6/vZ3
+# ORg2hDADu42oGxw7/Yv2qkQZvhqnw1iNl2Sa9/U3oW8TyvtmRDGhjl0PMAysVdkf
+# UqMt3lGhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDA5MTk1NzMwWjAjBgkqhkiG9w0BCQQxFgQUFTbX
-# ZfOxX7beaIxj5C6qq8BTVgAwDQYJKoZIhvcNAQEBBQAEggEAAZTG9dJfehmQcAte
-# aGnm1QvEm6AT5yrOjMhniiv2y34MeVe4CTZLki1N0eVWG5GW9p2XZoxiGSOKPhS6
-# tEcYFoCjoeCV31JyBUCFFteeyMuJhVflrq4PNPtehaets3zFwXrk/VzB357UGmZN
-# eKQ7zkNYluNI1ziw3uig0zp12xKnxgdE+xlaDuR7zweUT/TrIjHJUNEUgnLcYcG5
-# KIrsswpx0Jn3H4dLt83cAIuogne3UvJxDlHaVKWc7rLuwHJ6dA2qFQnQlQyvWrb+
-# 0uMWeQ5uW8HJsWYRV/4/PSk4oGkUVl8+yf+umTGWcHPy2jD7vAYEbaWUsBMBrTQE
-# 5b8Evg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMDU4WjAjBgkqhkiG9w0BCQQxFgQUb9kt
+# hmX1LoJRdOoWSL+uEFtFj4gwDQYJKoZIhvcNAQEBBQAEggEAIGbMU+K0IozA6cuT
+# lK3jybWU1YIOgvBBJeVZBJr3ANDWViBa3XfbMY23+FooAFBP/gwh9mHotK6bMjbX
+# I4W+cgJ4IdQqWDImZE36SlsQ5XH0PO3fvDGQHpfJMo6iZw70ltwoUD4yTJbIaOwQ
+# VtGsPbe0lC8E9yYc52lswADYGkQFXbmpe/UqrFPyKUB5ihyPdv4xE13EK0D3nie0
+# kkFH0lSH39vA6N+NAV2wZUVhS+cF2fPqouX9IQ/R8c7JQEFpBoA5sEgQpoE9Bo0L
+# dHHea/j8/r4POg1b9VPVm0C2PKIix7M8ETPwNsr5iRf4Vb9o8KtgiSiWLePgsbLt
+# t3szVw==
 # SIG # End signature block

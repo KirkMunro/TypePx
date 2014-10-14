@@ -22,118 +22,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #############################################################################>
 
-<#
-.SYNOPSIS
-    Adds or updates a type accelerator in the current session.
-.DESCRIPTION
-    The Add-TypeAccelerator command adds or updates a type accelerator in the current session.
-
-    By default, Add-TypeAccelerator will add a type accelerator to the current session, overwriting the type accelerator if it already exists. You can use the NoClobber parameter to prevent Add-TypeAccelerator from overwriting a type accelerator that already exists.
-.INPUTS
-    System.Type
-.OUTPUTS
-    TypeAccelerator
-.NOTES
-    To add accelerators for an entire namespace, use the Use-Namespace command.
-.EXAMPLE
-    PS C:\> Add-TypeAccelerator -Name CommandMetadata -Type System.Management.Automation.CommandMetadata
-    PS C:\> New-Object -TypeName CommandMetadata -ArgumentList (Get-Command -Name Stop-Service)
-
-    This command adds a type accelerator for the System.Management.Automation.CommandMetadata class and then uses that accelerator to get the command metadata for the Stop-Service command.
-.LINK
-    Get-TypeAccelerator
-.LINK
-    Remove-TypeAccelerator
-.LINK
-    Set-TypeAccelerator
-.LINK
-    Use-Namespace
-#>
-function Add-TypeAccelerator {
-    [CmdletBinding(SupportsShouldProcess=$true)]
-    [OutputType('TypeAccelerator')]
+function Add-ScriptMethodData {
+    [CmdletBinding()]
+    [OutputType([System.Void])]
     param(
-        # The name of the type accelerator.
         [Parameter(Position=0, Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $TypeName,
+
+        [Parameter(Position=1, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
         [System.String]
-        $Name,
+        $ScriptMethodName,
 
-        # The type that the type accelerator will reference.
-        [Parameter(Position=1, Mandatory=$true, ValueFromPipeline=$true)]
+        [Parameter(Position=2, Mandatory=$true)]
         [ValidateNotNull()]
-        [System.Type]
-        $Type,
-
-        # Will not overwrite a type accelerator if one already exists with the same name. By default, if a type accelerator exists with the same name, Add-TypeAccelerator overwrites the type accelerator without warning.
-        [Parameter()]
-        [System.Management.Automation.SwitchParameter]
-        $NoClobber,
-
-        # Returns an object representing the type accelerator that was added. By default, this command does not generate any output.
-        [Parameter()]
-        [System.Management.Automation.SwitchParameter]
-        $PassThru
+        [System.Management.Automation.ScriptBlock]
+        $ScriptBlock
     )
-    process {
-        try {
-            #region Add the type accelerator if it does not exist or of NoClobber was not used.
-
-            if ((-not $script:typeAcceleratorsType::Get.ContainsKey($Name)) -or
-                (-not $PSCmdlet.MyInvocation.BoundParameters.ContainsKey('NoClobber')) -or
-                (-not $NoClobber)) {
-                if ($PSCmdlet.ShouldProcess($Name)) {
-                    # Since this class changed between versions, we need to figure out which approach to take
-                    if (Get-Member -InputObject $script:typeAcceleratorsType -Name AddReplace -Static -ErrorAction Ignore) {
-                        #region Add the new type accelerator.
-
-                        $script:typeAcceleratorsType::AddReplace($Name, $Type)
-
-                        #endregion
-                    } else {
-                        #region Remove any existing type accelerator with the same name.
-
-                        if ($script:typeAcceleratorsType::Get.ContainsKey($Name)) {
-                            $script:typeAcceleratorsType::Remove($Name) > $null
-                        }
-
-                        #endregion
-
-                        #region Add the new type accelerator.
-
-                        $script:typeAcceleratorsType::Add($Name, $Type)
-
-                        #endregion
-                    }
-                }
-
-                #region Pass the type accelerator object through if requested.
-
-                if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('PassThru') -and $PassThru) {
-                    Get-TypeAccelerator -Name $Name
-                }
-
-                #endregion
-            }
-
-            #endregion
-        } catch {
-            $PSCmdlet.ThrowTerminatingError($_)
+    try {
+        Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
+            Hashtable = $script:TypeExtensions
+                 Keys = $TypeName
+                Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptMethodData -ArgumentList @($ScriptMethodName, $ScriptBlock)
         }
+    } catch {
+        $PSCmdlet.ThrowTerminatingError($_)
     }
-}
-
-Export-ModuleMember -Function Add-TypeAccelerator
-
-New-Alias -Name atx -Value Add-TypeAccelerator -ErrorAction Ignore
-if ($?) {
-    Export-ModuleMember -Alias atx
 }
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU8Xvsu6xh8xMY+I/VsJHeckMu
-# ViugghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUBwdBlmRVNNU2HX3wZjEFqbMf
+# G3SgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -246,23 +168,23 @@ if ($?) {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFCeP
-# X9HQJCdrRph2E6sbVmZu0PLVMA0GCSqGSIb3DQEBAQUABIIBAJlNO7mnVQOdIhgw
-# gRfKLbGr4KHQJsLMQtBv82e1otQiSrdpZPxrb9KpAhMJ6MnuQ0wXadUEDjKe2luz
-# AxCdyHDHedrPIjmexOSFB8eK71DkPRHQPSU3szwsDAM8Cqk1KHarQPIxtojIo+sn
-# R7NXv03qQ9xfaYxzrORmgVy8w9uu9+RSTzyJ2kCq7mmLr3q7+NNvNF7Nice+yfR3
-# ZRhKWtW5L4f2nXbatXFHLBWL63WfGdm4hPba8FxUsTXaqFrcuJz4OjnTztHPGyIU
-# Y1oqoTD97bBolqfCJc1aWjYLKl3qUGwrDkj04uBI8RiBsINpX5JBuOs9+20GdI8Z
-# beka692hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBBc
+# t08IsYiLWJcGaSKPNmm1MSabMA0GCSqGSIb3DQEBAQUABIIBAJzhDWjtjB0rRhWj
+# uH5543NTY7ZfPIVVnETBUn9OZCiTijWnjOu+4/zKwr8jdHLRgZBiac76yhyg4lOT
+# AnRgcI2//2G5bDq6WO8MqDkyYNsBAeE6yuvZq1F3irIvuN17gHPk5icwC6yUSjv3
+# Ntu9YmTqfxY/F1aeEs7UQ5695sWBkFyy3GNWgrxpmwydgmAqgDO1q9n7q1GvMgpR
+# 9Wj2mWI4JshD6bk34zWIZjdTZR5aXHpoP4yBeIy5F7cAk3ZRCOJu8j52aXsI9pCN
+# Y1fSb6yilMbe8GVDLn6ZAW1KmDgP4ujpYbsB4kJCGthprZA9qRyi08rjBAZLBLm8
+# 5LyV1hqhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMDU4WjAjBgkqhkiG9w0BCQQxFgQUhfAx
-# +Q+Cw0qxUxAZrJ/c1itmzEYwDQYJKoZIhvcNAQEBBQAEggEACEn6Z+d6hul2gh4I
-# o1QkyxcodvW7YFMpof/df0KkZq8Jd82IqMwjWLI2czC7QyZ8mlR5tQC6Ln8xwYgs
-# s8GmHD0dXSbs0jnlTah6ZB1EcJPOqsKLNzxeld261G49LkqHB1ZvFhRmKTZy5H1J
-# uZCUtPBfKL8puWa4tA1QD1in1R3hOtV8Z9x/KPfZA8ES2Bc03PgpXMDfzEIFV5ZX
-# Kn5fNTm9jfMDodH6m023lVCt5Nsn97d8wE7TgjfCAgeXDyW2X1dAKe0+t8Q+RTsU
-# QSBBFrYMBLUrXwNO9YWg4YAYC8GMc3jmu3q/PFQSAEj1EaCj19FL26+Cvs05YM55
-# Iko+sg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMDU5WjAjBgkqhkiG9w0BCQQxFgQUSeX0
+# Tq+/R7CCAxnoeV3nuzyoR6kwDQYJKoZIhvcNAQEBBQAEggEAas+xSlaOAeOaPl23
+# vn96tszP8y+pyoIqrFyK078ay2lw7/W1NtQ+JZv1jSgvjSG/Is/nMcoNMEHBknvY
+# RYMLpOB0r5t++PuXtEMsr98mh70Skp7yCEt1p1LX/V8OU88PM84szlw/BbdRTRlC
+# dAQuPpIjv3C8Fm1e3w34eX+0fwx3s1WQltQkQp61Httr+bOBBVU/9G9Ld9g/o76f
+# 1UpGvUqLHllZUn1gaUVMQmuqQYplZF0eaEVYZfDT1LbBRq/3HmdoQVuLodMJqzQZ
+# vD7Ca5UzNq7eXmpfzDfniZ8xoCIFVHNe6nxqBlctB1lN/ljR5GZ1yUeWLyQ3vM2S
+# dS5rBQ==
 # SIG # End signature block
