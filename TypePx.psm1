@@ -127,7 +127,9 @@ $PSModule.OnRemove = {
         if ($typeData.Members.Count -eq 0) {
             continue
         }
-        if (-not (Compare-Object -ReferenceObject $TypeExtensions[$typeData.TypeName].foreach('Name') -DifferenceObject $typeData.Members.Keys.foreach({$_}))) {
+        $etsMembersAdded = @($TypeExtensions[$typeData.TypeName] | Select-Object -ExpandProperty Name)
+        $etsMembersFound = @($typeData.Members.Keys | ForEach-Object {$_})
+        if (-not (Compare-Object -ReferenceObject $etsMembersAdded -DifferenceObject $etsMembersFound)) {
             $indices += $index
         }
     }
