@@ -118,13 +118,13 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Slice -ScriptBlock {
     # Define a variable to hold the sliced array results
     $results = @()
     # Iterate through the collection and break it up into slices
-    $this.foreach({
+    foreach ($item in $this) {
         if ($slice.Count -eq $Count) {
             $results += ,($slice.ToArray() -as $this.GetType())
             $slice.Clear()
         }
-        $slice.Add($_) > $null
-    })
+        $slice.Add($item) > $null
+    }
     # If there are any items left not in a slice, package up all remaining items into a slice and add it to the results
     if ($slice.Count) {
         $results += ,($slice.ToArray() -as $this.GetType())
