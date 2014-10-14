@@ -22,31 +22,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #############################################################################>
 
-$typeName = 'System.Collections.Hashtable'
-
-Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptBlock {
-    [System.Diagnostics.DebuggerHidden()]
+function Add-ScriptPropertyData {
+    [CmdletBinding()]
+    [OutputType([System.Void])]
     param(
-        # The hash table key for which you want to add an item to the collection
         [Parameter(Position=0, Mandatory=$true)]
-        [ValidateNotNull()]
-        [System.Object]
-        $Key,
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $TypeName,
 
-        # The item(s) you want to add to the collection
         [Parameter(Position=1, Mandatory=$true)]
-        [AllowNull()]
-        [System.Array]
-        $Value
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $ScriptPropertyName,
+
+        [Parameter(Position=2, Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.Management.Automation.ScriptBlock]
+        $GetScriptBlock,
+
+        [Parameter(Position=3)]
+        [ValidateNotNull()]
+        [System.Management.Automation.ScriptBlock]
+        $SetScriptBlock
     )
-    # Add remaining arguments to the value collection for easier invocation
-    if ($args) {
-        $Value += $args
-    }
-    # Invoke a snippet to add the item to the collection
-    Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
-        Hashtable = $this
-             Keys = $Key
-            Value = $Value
+    try {
+        $constructorArguments = @(
+            $ScriptPropertyName,
+            $GetScriptBlock
+        )
+        if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('SetScriptBlock')) {
+            $constructorArguments += $SetScriptBlock
+        }
+        Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
+            Hashtable = $script:TypeExtensions
+                 Keys = $TypeName
+                Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptPropertyData -ArgumentList $constructorArguments
+        }
+    } catch {
+        $PSCmdlet.ThrowTerminatingError($_)
     }
 }

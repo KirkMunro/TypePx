@@ -1,32 +1,36 @@
 ﻿<#############################################################################
 The TypePx module adds properties and methods to the most commonly used types
 to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and self-
-documenting. TypePx also provides commands to manage type accelerators. Type
-acceleration also contributes to making scripting easier and they help produce
-more readable scripts, particularly when using a library of .NET classes that
-belong to the same namespace.
+an enhanced syntax in PowerShell that is both easier to read and
+self-documenting. TypePx also provides commands to manage type accelerators.
+Type acceleration also contributes to making scripting easier and they help
+produce more readable scripts, particularly when using a library of .NET
+classes that belong to the same namespace.
 
-Copyright © 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the DebugPx module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #############################################################################>
 
-Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName ToString -Value {
+$typeName = 'System.Array'
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToString -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
+    # A string to capture the ellipsis if it is required
     $ellipsis = ''
+    # If we're truncating the array, join the appropriate number of items and add an ellipsis, otherwise
+    # simply join the array of items
     if ($this.Length -gt $FormatEnumerationLimit) {
         $stringArray = $this[0..($FormatEnumerationLimit - 1)] -join ','
         $ellipsis = '...'
@@ -35,91 +39,100 @@ Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberNa
     } else {
         $stringArray = ''
     }
+    # Return the string to the caller
     "{${stringArray}${ellipsis}}"
 }
-$script:TypeExtensions.AddArrayItem('System.Array','ToString')
 
-Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Compact -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Compact -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
+    # Return a strongly typed array with null values filtered out
     # The order of the comparison here is very important because @() -ne $null returns nothing.
     ,($this.where({$null -ne $_}) -as $this.GetType())
 }
-$script:TypeExtensions.AddArrayItem('System.Array','Compact')
 
-Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Unique -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Unique -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
+    # An array list of the unique elements in the array
     $uniqueElements = New-Object -TypeName System.Collections.ArrayList
+    # Add the unique array elements to the uniqueElements collection
     $this.foreach({if (-not $uniqueElements.Contains($_)) {[void]$uniqueElements.Add($_)}})
+    # Return a strongly typed array of unique elements
     ,($uniqueElements -as $this.GetType())
 }
-$script:TypeExtensions.AddArrayItem('System.Array','Unique')
 
-Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Reverse -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Reverse -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param()
+    # Return the reversed strongly typed array
     if ($this.Length -gt 0) {
         ,($this[-1..-$this.Length] -as $this.GetType())
     } else {
         ,($this -as $this.GetType())
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Array','Reverse')
 
-Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Flatten -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Flatten -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
+        # The number of levels to flatten out (by default all levels are flattened)
         [Parameter(Position=0)]
         [ValidateNotNull()]
         [ValidateRange(0,[System.Int32]::MaxValue)]
         [System.Int32]
-        $Level
+        $Level = 0
     )
+    # The current state of the array
     $flattenedArray = $this
+    # A script block to flatten one level of the array
+    $flattenOneLevelScriptBlock = {
+        $flattenedArray = @($flattenedArray.foreach({$_}))
+    }
+    # If Level is greater than 0, flatten that number of levels, othewise flatten all levels
     if ($Level -gt 0) {
         for ($index = 1; $index -le $Level; $index++) {
-            $flattenedArray = @($flattenedArray.foreach({$_}))
+            . $flattenOneLevelScriptBlock
         }
     } else {
         while ($flattenedArray.where({$_ -is [System.Array]})) {
-            $flattenedArray = @($flattenedArray.foreach({$_}))
+            . $flattenOneLevelScriptBlock
         }
     }
+    # Return the strongly typed flattened array
     ,($flattenedArray -as $this.GetType())
 }
-$script:TypeExtensions.AddArrayItem('System.Array','Flatten')
 
-Update-TypeData -Force -TypeName System.Array -MemberType ScriptMethod -MemberName Slice -Value {
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Slice -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
+        # The number of objects to include in each slice
         [Parameter(Position=0, Mandatory=$true)]
         [ValidateNotNull()]
         [ValidateRange(1,[System.Int32]::MaxValue)]
         [System.Int32]
         $Count
     )
-    $chunk = New-Object -TypeName System.Collections.ArrayList
-    $firstReturn = $true
+    # An array list to hold the current slice
+    $slice = New-Object -TypeName System.Collections.ArrayList
+    # Define a variable to hold the sliced array results
+    $results = @()
+    # Iterate through the collection and break it up into slices
     $this.foreach({
-        if ($chunk.Count -eq $Count) {
-            if ($firstReturn) {
-                $firstReturn = $false
-                ,,($chunk.ToArray() -as $this.GetType())
-            } else {
-                ,($chunk.ToArray() -as $this.GetType())
-            }
-            $chunk.Clear()
+        if ($slice.Count -eq $Count) {
+            $results += ,($slice.ToArray() -as $this.GetType())
+            $slice.Clear()
         }
-        $chunk.Add($_) > $null
+        $slice.Add($_) > $null
     })
-    if ($chunk.Count) {
-        if ($firstReturn) {
-            $firstReturn = $false
-            ,,($chunk.ToArray() -as $this.GetType())
-        } else {
-            ,($chunk.ToArray() -as $this.GetType())
-        }
+    # If there are any items left not in a slice, package up all remaining items into a slice and add it to the results
+    if ($slice.Count) {
+        $results += ,($slice.ToArray() -as $this.GetType())
+    }
+    # Now return the sliced up array, considering the number of items because of how PowerShell unravels arrays
+    if ($results.Count -eq 1) {
+        ,$results
+    } else {
+        $results
     }
 }
-$script:TypeExtensions.AddArrayItem('System.Array','Slice')

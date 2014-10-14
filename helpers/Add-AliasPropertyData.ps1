@@ -22,22 +22,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #############################################################################>
 
-$typeName = 'System.Management.Automation.PSModuleInfo'
-
-Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetLocalStoragePath -ScriptBlock {
-    [System.Diagnostics.DebuggerHidden()]
+function Add-AliasPropertyData {
+    [CmdletBinding()]
+    [OutputType([System.Void])]
     param(
-        # If true, returns the module local storage folder for the current user; otherwise, returns the folder for all users
-        [System.Boolean]
-        $CurrentUser = $false
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String[]]
+        $TypeName,
+
+        [Parameter(Position=1, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $AliasPropertyName,
+
+        [Parameter(Position=2, Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $TargetPropertyName,
+
+        [Parameter(Position=3)]
+        [ValidateNotNull()]
+        [System.Type]
+        $AliasPropertyType
     )
-    # Determine where to look for module local storage
-    if ($CurrentUser) {
-        $mlsRoot = $env:LocalAppData
-    } else {
-        # When working with All Users, we use the ProgramData folder instead of the All Users profile.
-        $mlsRoot = $env:ProgramData
+    try {
+        $constructorArguments = @(
+            $AliasPropertyName,
+            $TargetPropertyName
+        )
+        if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('AliasPropertyType')) {
+            $constructorArguments += $AliasPropertyType
+        }
+        Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
+            Hashtable = $script:TypeExtensions
+                 Keys = $TypeName
+                Value = New-Object -TypeName System.Management.Automation.Runspaces.AliasPropertyData -ArgumentList $constructorArguments
+        }
+    } catch {
+        $PSCmdlet.ThrowTerminatingError($_)
     }
-    # Return the path based on the root folder and the module name
-    Join-Path -Path $mlsRoot -ChildPath "WindowsPowerShell\Modules\$($this.Name)"
 }

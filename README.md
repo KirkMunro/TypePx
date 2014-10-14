@@ -17,20 +17,19 @@ belong to the same namespace.
 
 ### License and Copyright
 
-Copyright (c) 2014 Kirk Munro.
+Copyright 2014 Kirk Munro
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-You should have received a copy of the GNU General Public License in the
-license folder that is included in the root folder of the module. If not, see
-<https://www.gnu.org/licenses/gpl.html>.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 ### Installing the TypePx module
 
@@ -231,20 +230,20 @@ $s.foreach('Start')
 $a = (1,2),(3,4),(5,6)
 $a.foreach('Get',1)
 # Filter a collection (again, brackets are not necessary here in PSv4+)
-$s = gsv w*
+$s = gsv c*
 $s.where({$_.Status -eq 'Running'})
 # Get the first item matching a filter
 $s.where({$_.Status -eq 'Running'},'First')
 # Get the first N items matching a filter
-$s.where({$_.Status -eq 'Running'},'First',4)
+$s.where({$_.Status -eq 'Running'},'First',2)
 # Get the last item matching a filter
 $s.where({$_.Status -eq 'Running'},'Last')
 # Get the last N items matching a filter
-$s.where({$_.Status -eq 'Running'},'Last',4)
+$s.where({$_.Status -eq 'Running'},'Last',2)
 # Skip items in a collection until a filter matches, then return all objects
 $s.where({$_.Status -eq 'Running'},'SkipUntil')
 # Skip items in a collection until a filter matches, then return the first N items
-$s.where({$_.Status -eq 'Running'},'SkipUntil',4)
+$s.where({$_.Status -eq 'Running'},'SkipUntil',2)
 # Return all items in a collection until a filter matches
 $s.where({$_.Status -eq 'Running'},'Until')
 # Return the first N items in a collection until a filter matches
@@ -254,7 +253,7 @@ $collections = $s.where({$_.Status -eq 'Running'},'Split')
 $collections[0]
 $collections[1]
 # Return a collection of the first N items matching a filter, followed by a collection of all other items
-$collections = $s.where({$_.Status -eq 'Running'},'Split',5)
+$collections = $s.where({$_.Status -eq 'Running'},'Split',2)
 $collections[0]
 $collections[1]
 # Return all items in a collection matching a filter
