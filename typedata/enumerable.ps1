@@ -23,11 +23,11 @@ limitations under the License.
 #############################################################################>
 
 $commonlyUsedGenericTypeParameters = @(
-    'System.Management.Automation.PSObject'
-    'System.Object'
-    'System.String'
-    'System.Int32'
-    'System.Int64'
+    [System.Management.Automation.PSObject]
+    [System.Object]
+    [System.String]
+    [System.Int32]
+    [System.Int64]
 )
 $typeNames = @()
 foreach ($assembly in [System.AppDomain]::CurrentDomain.GetAssemblies()) {
@@ -54,7 +54,7 @@ foreach ($assembly in [System.AppDomain]::CurrentDomain.GetAssemblies()) {
         # enumerable type collection; otherwise, just add the type
         if ($type.IsGenericTypeDefinition) {
             foreach ($typeParameter in $commonlyUsedGenericTypeParameters) {
-                $typeNames += "$($type.FullName)[${typeParameter}]"
+                $typeNames += "$($type.FullName)[[$($typeParameter.AssemblyQualifiedName)]]"
             }
         } else {
             $typeNames += $type.FullName
