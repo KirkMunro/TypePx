@@ -23,11 +23,11 @@ limitations under the License.
 #############################################################################>
 
 $commonlyUsedGenericTypeParameters = @(
-    'System.Management.Automation.PSObject'
-    'System.Object'
-    'System.String'
-    'System.Int32'
-    'System.Int64'
+    [System.Management.Automation.PSObject]
+    [System.Object]
+    [System.String]
+    [System.Int32]
+    [System.Int64]
 )
 $typeNames = @()
 foreach ($assembly in [System.AppDomain]::CurrentDomain.GetAssemblies()) {
@@ -54,7 +54,7 @@ foreach ($assembly in [System.AppDomain]::CurrentDomain.GetAssemblies()) {
         # enumerable type collection; otherwise, just add the type
         if ($type.IsGenericTypeDefinition) {
             foreach ($typeParameter in $commonlyUsedGenericTypeParameters) {
-                $typeNames += "$($type.FullName)[${typeParameter}]"
+                $typeNames += "$($type.FullName)[[$($typeParameter.AssemblyQualifiedName)]]"
             }
         } else {
             $typeNames += $type.FullName
@@ -343,8 +343,8 @@ Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Sum -ScriptBlock {
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUQBNKdfZjuEWA5Vtr3XSKxSvF
-# vMqgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUdviA/nVotaRFg0aYhJQenZxR
+# PXigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -457,23 +457,23 @@ Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Sum -ScriptBlock {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFLHC
-# RYF8SiIgMtdh2Wo5F2SfM3pEMA0GCSqGSIb3DQEBAQUABIIBAELfZKFq1AEKvayZ
-# /u4JTi0hViAxtiPw1sVrA7TqjkMbOsiYOlc10qLbkCVwsGwtaBCKjqmgjWBylelq
-# yiJ7BnfK6IQPUAhAPcDOpfnjbEES/XLVXrBb0vJ8w4WGK8kWWSimfUY3cOh51o/n
-# Tfdwd9bOlPm0sv+glI+44rEcpvnJsX67B6X4Ki5Q9+VCojB0W2/Qe/LvZt0Euk7b
-# vgZJtyvXsrkSoUG+IfYeQJB0hNjPnoPk/RDJGG0zzel2urOfGeNL2tuPKPUHg3VW
-# fdLUHkjzCARA/klLyDHfTQThsqI0rmMGmv7zJpA48bU+w2TwH6TifaPXFfV94q8Y
-# teUwzlehggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHQB
+# D6YIRESoAqFeZzlclsXEvHJyMA0GCSqGSIb3DQEBAQUABIIBAMK3g/kz7nVv+Xos
+# Vzo3VIuzQQfxVhJIxR9uf6II++2MRWim7q88AuMcsIDqp23DPv44DV6ZQ0J03jKW
+# VA1G7WmvtbTJUKydsYF4zdlY0TjVH9HkSk9NirQmamx31c0e9FliX+p8Zh/s4SEs
+# +JX8Xt7dInyQGj/1A4hmqaiTuRKeW/ZAJJcgxljxkMC8ZS1dCdLtBPQSAUVTyOP7
+# qqb0q0qYH/+IfB84xzY4L0WJ0PdW++OWCPzD2oJkS6++yVS7IYq3hqGUHwQ4UBc0
+# aliKPPD/jELAQobqjqLz85kba31J2evLWU5nlrVQT+b3T6r+B3gDCAjKnVOOVvqP
+# J77a7+ehggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDE0MDUxMTAwWjAjBgkqhkiG9w0BCQQxFgQUKs08
-# vOD3JnzYmuMmd7kFjtIiL6kwDQYJKoZIhvcNAQEBBQAEggEAHNk++60PTa/kepli
-# J1u/5NBZ/2qayKzealFFxBIYgq1iwCuV8CHFgc+laJMcuV7nMwPn4OJA2Q0V0Yug
-# JCQbsXcxXxe1Ftkn27aGBYjvFIrop061Os5XDG0JU4M4lDYXgxNp55xsN5Hcd8Rd
-# oXaquWheU6SlZkkKA2o7mbHHOaspDa1VSoHJWyj2ZH+Zxun6LRwWNVMzSpvLTkmq
-# jE9SPR8WaIvK0pYdkGvFCNIZECKK5IDVD/i9OazPzC1HPTzE1XsYgBMozkoQyISL
-# 3ZGtOv1KjUPg0PfGq2ReubFlmLp8YigmC8qsht1msZTvVMhPhzm+b0iyimdKn2RU
-# LWvZSg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDE2MTUxODM2WjAjBgkqhkiG9w0BCQQxFgQUVBSd
+# Ews+mjgzXQZ7+YfpP8WP9oowDQYJKoZIhvcNAQEBBQAEggEAO7Ot889U6+FAxftm
+# yZC6c9YXAKqlRWk4h1DMi0RoDNXjJP4dYHeHuattsb/258P5FSrkvLRNXsL1ECXp
+# rn6p3Plb3TBVRTn8RDnuXiCdPN7ZRmY0d5Hu4ijCiWKIAy34b8h/DJucYbjbbJrm
+# 7aeaeUhuh/oTgbTOnnpmHAJ/fTHXemrcD4XpmK1x5RPJi9IlrEkv2Z2aHHjgjYAQ
+# yI3dZmW2VWajdSPNmJzAMxNI+3N3TLtQtu9a3FZvQr/p7rFFPjFE2GtBcbqUHOfM
+# KfX7qMUKXPFIjQnqSOTa6nlrjF8SwglbTRKnC9q90i7bMYxCq09C3S94HU0Lv+Jh
+# sX5fDQ==
 # SIG # End signature block
