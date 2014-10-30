@@ -24,6 +24,62 @@ limitations under the License.
 
 $typeName = 'System.Collections.Hashtable'
 
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToString -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The format you want to use when converting the hashtable into a multi-line string
+        [Parameter(Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateSet('SingleLine','MultiLine')]
+        [System.String]
+        $Format = 'SingleLine',
+
+        # The indent you want to use when converting the hashtable into a multi-line string
+        [Parameter(Position=1)]
+        [ValidateNotNull()]
+        [System.Object]
+        $Indent = ' ' * 4
+    )
+    $kvpStrings = @()
+    if ($Format -eq 'MultiLine') {
+        $kvpSeparator = "`n"
+        $newline = "`n"
+    } else {
+        $Indent = ''
+        $kvpSeparator = ';'
+        $newline = ''
+    }
+    foreach ($key in $this.Keys) {
+        if (($key -is [System.String]) -and
+            ($key -match '\s')) {
+            $keyName = "'$($key -replace '''','''''')'"
+        } elseif ($key -is [System.Collections.Hashtable]) {
+            $keyName = $key.ToString('SingleLine')
+        } else {
+            $keyName = $key.ToString()
+        }
+        if ($this[$key] -is [System.Collections.Hashtable]) {
+            $valueString = $this[$key].ToString($Format,$Indent)
+        } elseif ($this[$key] -is [System.String]) {
+            $valueString = "'$($this[$key].ToString() -replace '''','''''')'"
+        } else {
+            $valueString = $this[$key].ToString()
+        }
+        if ($Format -eq 'MultiLine') {
+            $valueString = $valueString -replace "`r`n|`r|`n","${newline}${Indent}"
+            $valueStrings = $valueString -split "${newline}"
+            for ($index = 0; $index -lt $valueStrings.Count; $index++) {
+                if ($valueStrings[$index].Length -gt ($host.UI.RawUI.BufferSize.Width - 1)) {
+                    $valueStrings[$index] = $valueStrings[$index].SubString(0,$host.UI.RawUI.BufferSize.Width - 4) + '...'
+                }
+            }
+            $valueString = $valueStrings -join "${newline}"
+        }
+        $kvpStrings += "${Indent}${keyName} = ${valueString}"
+    }
+    "@{${newline}$($kvpStrings -join $kvpSeparator)${newline}}"
+}
+
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
@@ -53,8 +109,8 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptB
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUq7T7pklHMcOgOmiX1F2mJabl
-# +VSgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUQH2g6RVBmPl75azZH8diT64O
+# BGygghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -167,23 +223,23 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptB
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFG5u
-# c6bsdDot4/qxSFEhHS+ByJZOMA0GCSqGSIb3DQEBAQUABIIBAKxdkCnf2exJ7Zyi
-# yYtCkNQK6LorrAam9+4rxf0Fv6lAI+SRFVLPfVI0yOtCKOqITI8KI90//7ko0/Zj
-# 384EvUSolxumoMdRx+HtsWZyqFBOAA8onZlSnuRyk8lkNqh9BWxwi71QnHrEAxv8
-# 81RaoAjIY2Eyoc66l5/7WMC8rStvR6qUds4e9g0IKJ6MnWKtm5ZcprVo9UwBJtD5
-# 4LG1SP8lLd4ibV4jtbYc7JZ0jGDG7mZKZ7OjUPAHxJ0tjCWDnlfvy9tMsY9mqXyx
-# wywbZaUmktMDGZg3ahxuBcoUaz3umoggxu+O54eBqXCe1BJHH3MX2lR40c70wJX8
-# HnVZxI6hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFF4E
+# jM/J1czuXlE3flnbFyeUGRZgMA0GCSqGSIb3DQEBAQUABIIBAJklh2lc6u5KBGXC
+# 9gXYroRX/nT8Pv7HeHtTQHomOmssL1SneJpi5qhVkOcF1waUhZVi82pCRhjxl4wN
+# ogeqIG2I6VQTtrw6+Yzce8d9hUBM+Gc4jbrI163b6fOK0EKdZBPHRQ+zFc8RXdGf
+# iP/zG+2vULD3mPX3xTqcRyXgvn65XpmhqItYxRdDrd0aXqaFIvBNll0kxRPw3SJY
+# hf6IfvIizf0vjmCYy7f6rucV12+73hwK6YabdXcX/lCcz4wP45njaUG/54Gu2fjb
+# nIrKILzXdK695z/o/nMhhogmWZAfwl21xro0un4cs0rFZcuOK614WLlq3xEZgpGQ
+# fMguboWhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDE2MTUxODM2WjAjBgkqhkiG9w0BCQQxFgQUt3zJ
-# A9HHOHwngz+lyl5rjTuxyakwDQYJKoZIhvcNAQEBBQAEggEAEsqqKfEHEh67Xho+
-# IagzmtnSki7bro45HmMhxSoIm4oHOYOetpGfyISsqSndbXrfXutbapXXFBMwqmNj
-# B7pkLQ9soyNGukVFwhJoTKZOn+kdu0UkbKeZLCit745g1hCAhyQEIvxgVdU1IDdT
-# xAASZM1dzwzn8T0MABOCaOROvbHYdT408GSAFMezCRyjQCuSAZxpzLKkAVWa3CZj
-# QW+YJecIMCODU6YtQoUYf8aH1Ju6r9QttPE+r2xsPchY6t5/5tnhDiJ/U3d/WFnr
-# NquNo59x3dWF8EPVteE4CISK6FkaA9K0TPFX+6HBll0vWVlOZteQRuNWevnk6ctc
-# iWUPHA==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDMwMTgwNjA0WjAjBgkqhkiG9w0BCQQxFgQUr0iv
+# G1O523OqKdLOVoxcD3eEdaAwDQYJKoZIhvcNAQEBBQAEggEAkKMGZpZDVZO7SZ92
+# HT5jU4y+A/b6a+cIYJETQGnT1KTW/Kp/zDx9IXjO7pESgD4hAbPXS8KhxkAoZbU4
+# gmAu/3QH1WSN7oAmapvA8E5bz9yX8o9jnuRj3hbOSWzh7T/AlU5d3jlEac3LpXpI
+# KQZvagT5XMr6Ji0wwMnw7wYrvDOJBcNxsOFp1y+gc6aWQb/KqQLz7UIbMzswgu3/
+# //LSBGtKvrBa7noz4d3Fcy+t8XQm6Ih9HlkdDGs2HDEUY1AOneVg5zboyRcgpCXc
+# huN8muGrtWzg0gD3wvVoYD+zTfr2pBrb9i8Km7aRXLXf7lSMuW89ymIQdpTIW3Lh
+# kHZGwg==
 # SIG # End signature block

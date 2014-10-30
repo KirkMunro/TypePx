@@ -79,7 +79,13 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
             # I would love to make this more efficient for 3.0, but it is too difficult to work around the
             # limitation of being unable to invoke a script block in its scope while passing it parameters
             # without using a pipeline.
-            $results = $this | ForEach-Object -Process $Object
+            $passThruParameters = @{
+                Process = $Object
+            }
+            if ($args) {
+                $passThruParameters['ArgumentList'] = $args
+            }
+            $results = $this | ForEach-Object @passThruParameters
         } elseif ($Object -is [System.Type]) {
             # Convert the items in the collection to the type specified
             foreach ($item in $this) {
@@ -343,8 +349,8 @@ Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Sum -ScriptBlock {
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUdviA/nVotaRFg0aYhJQenZxR
-# PXigghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHeQBZD8KbydtEk53W7blljz4
+# roGgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -457,23 +463,23 @@ Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Sum -ScriptBlock {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHQB
-# D6YIRESoAqFeZzlclsXEvHJyMA0GCSqGSIb3DQEBAQUABIIBAMK3g/kz7nVv+Xos
-# Vzo3VIuzQQfxVhJIxR9uf6II++2MRWim7q88AuMcsIDqp23DPv44DV6ZQ0J03jKW
-# VA1G7WmvtbTJUKydsYF4zdlY0TjVH9HkSk9NirQmamx31c0e9FliX+p8Zh/s4SEs
-# +JX8Xt7dInyQGj/1A4hmqaiTuRKeW/ZAJJcgxljxkMC8ZS1dCdLtBPQSAUVTyOP7
-# qqb0q0qYH/+IfB84xzY4L0WJ0PdW++OWCPzD2oJkS6++yVS7IYq3hqGUHwQ4UBc0
-# aliKPPD/jELAQobqjqLz85kba31J2evLWU5nlrVQT+b3T6r+B3gDCAjKnVOOVvqP
-# J77a7+ehggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHeG
+# X0dkIGVmihpNhJZlk5rMLxamMA0GCSqGSIb3DQEBAQUABIIBAFlEhTO39RhSD0zM
+# dtEMpw+Z7x7Z9wXoGI6E8AW5KTlWl7qGFUYi9JLLQL35fV9bA+9PJRjrclv17zQU
+# +vRKCrM4/P2FK0KZ2LTvAu2IRBptAukhjGPK1rCiltzhxiuY4jy7Qm5jmBcE7dD6
+# HUWa9+batNsbJFQKiODM9FA5YwX+Ze+eGmuHJYkeoI2+Ot5aHam4Yeh306j6owv+
+# 41VR14SOCMJXaf2SJY+PooRaVZI4VeeTCUVwUEUtkz+hFjUeoxN34SBaY1HLvzrT
+# IbuLyCQCaqNgLr33VbKflWJjAoTOTz2/+dF1YiQGJj0v+yq0Kzqrka+H/NBysSt0
+# Z6+pXUGhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDE2MTUxODM2WjAjBgkqhkiG9w0BCQQxFgQUVBSd
-# Ews+mjgzXQZ7+YfpP8WP9oowDQYJKoZIhvcNAQEBBQAEggEAO7Ot889U6+FAxftm
-# yZC6c9YXAKqlRWk4h1DMi0RoDNXjJP4dYHeHuattsb/258P5FSrkvLRNXsL1ECXp
-# rn6p3Plb3TBVRTn8RDnuXiCdPN7ZRmY0d5Hu4ijCiWKIAy34b8h/DJucYbjbbJrm
-# 7aeaeUhuh/oTgbTOnnpmHAJ/fTHXemrcD4XpmK1x5RPJi9IlrEkv2Z2aHHjgjYAQ
-# yI3dZmW2VWajdSPNmJzAMxNI+3N3TLtQtu9a3FZvQr/p7rFFPjFE2GtBcbqUHOfM
-# KfX7qMUKXPFIjQnqSOTa6nlrjF8SwglbTRKnC9q90i7bMYxCq09C3S94HU0Lv+Jh
-# sX5fDQ==
+# BgkqhkiG9w0BCQUxDxcNMTQxMDMwMTgwNjA0WjAjBgkqhkiG9w0BCQQxFgQUx+dl
+# QcaNYSrOD8LXBPSVNyB85ncwDQYJKoZIhvcNAQEBBQAEggEAQoILyrf9N8Se2N5p
+# LRojF/IsYT8q/yNtre/8rEJsQJOlzYcqeaHfhmekB14upD03hsbJFuKfU9ioDtth
+# 9rjlcw3eWTVSmO0ZooUL7SGT2PP0/hIC4GxeahXBleUXS8CjLLgnofs1JQ6LrVy5
+# 7sR827vGEhhxP8HJqbZ9/DFW1hNFvusWWsFGB1W9UbIb3eGWja7Gc3EJ/NlM8Uc6
+# 9ojZIIzXLouVSPAuKoJjXcWMw2gSrgxxUXPnaT5Mx+i96FijMM64eh0nJXbZtnO3
+# vwlTsTT5Siyzbm4oHr0VGwMRuaFrCkn8yVBbdwWp/EiFQdQDRM+ypkHSbfUlEJ1O
+# uq3yTQ==
 # SIG # End signature block
