@@ -24,6 +24,62 @@ limitations under the License.
 
 $typeName = 'System.Collections.Hashtable'
 
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToString -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The format you want to use when converting the hashtable into a multi-line string
+        [Parameter(Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateSet('SingleLine','MultiLine')]
+        [System.String]
+        $Format = 'SingleLine',
+
+        # The indent you want to use when converting the hashtable into a multi-line string
+        [Parameter(Position=1)]
+        [ValidateNotNull()]
+        [System.Object]
+        $Indent = ' ' * 4
+    )
+    $kvpStrings = @()
+    if ($Format -eq 'MultiLine') {
+        $kvpSeparator = "`n"
+        $newline = "`n"
+    } else {
+        $Indent = ''
+        $kvpSeparator = ';'
+        $newline = ''
+    }
+    foreach ($key in $this.Keys) {
+        if (($key -is [System.String]) -and
+            ($key -match '\s')) {
+            $keyName = "'$($key -replace '''','''''')'"
+        } elseif ($key -is [System.Collections.Hashtable]) {
+            $keyName = $key.ToString('SingleLine')
+        } else {
+            $keyName = $key.ToString()
+        }
+        if ($this[$key] -is [System.Collections.Hashtable]) {
+            $valueString = $this[$key].ToString($Format,$Indent)
+        } elseif ($this[$key] -is [System.String]) {
+            $valueString = "'$($this[$key].ToString() -replace '''','''''')'"
+        } else {
+            $valueString = $this[$key].ToString()
+        }
+        if ($Format -eq 'MultiLine') {
+            $valueString = $valueString -replace "`r`n|`r|`n","${newline}${Indent}"
+            $valueStrings = $valueString -split "${newline}"
+            for ($index = 0; $index -lt $valueStrings.Count; $index++) {
+                if ($valueStrings[$index].Length -gt ($host.UI.RawUI.BufferSize.Width - 1)) {
+                    $valueStrings[$index] = $valueStrings[$index].SubString(0,$host.UI.RawUI.BufferSize.Width - 4) + '...'
+                }
+            }
+            $valueString = $valueStrings -join "${newline}"
+        }
+        $kvpStrings += "${Indent}${keyName} = ${valueString}"
+    }
+    "@{${newline}$($kvpStrings -join $kvpSeparator)${newline}}"
+}
+
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(

@@ -79,7 +79,13 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
             # I would love to make this more efficient for 3.0, but it is too difficult to work around the
             # limitation of being unable to invoke a script block in its scope while passing it parameters
             # without using a pipeline.
-            $results = $this | ForEach-Object -Process $Object
+            $passThruParameters = @{
+                Process = $Object
+            }
+            if ($args) {
+                $passThruParameters['ArgumentList'] = $args
+            }
+            $results = $this | ForEach-Object @passThruParameters
         } elseif ($Object -is [System.Type]) {
             # Convert the items in the collection to the type specified
             foreach ($item in $this) {
