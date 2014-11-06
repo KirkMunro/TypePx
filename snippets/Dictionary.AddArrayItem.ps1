@@ -1,116 +1,41 @@
-﻿<#############################################################################
-The TypePx module adds properties and methods to the most commonly used types
-to make common tasks easier. Using these type extensions together can provide
-an enhanced syntax in PowerShell that is both easier to read and
-self-documenting. TypePx also provides commands to manage type accelerators.
-Type acceleration also contributes to making scripting easier and they help
-produce more readable scripts, particularly when using a library of .NET
-classes that belong to the same namespace.
+﻿<#
+.SYNOPSIS
+    Add an item to one or more keys as an array stored in a dictionary
+.DESCRIPTION
+    Add an item to one or more keys as an array stored in a dictionary. If the value is not an array or if the key does not yet exist in the dictionary, create the array from what is currently stored and add the item to that array.
+#>
+[System.Diagnostics.DebuggerHidden()]
+param(
+    # The dictionary you are modifying
+    [System.Object]
+    $Dictionary,
 
-Copyright 2014 Kirk Munro
+    # The hashtable keys for which you want to add an item to the collection
+    [System.Object[]]
+    $Keys,
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+    # The item(s) you want to add to the collection
+    [System.Array]
+    $Value
+)
+if (($Dictionary -ne $null) -and ($Dictionary.GetType().GetInterface('IDictionary',$true))) {
+    foreach ($key in $Keys) {
+        #region If the key does not exist, add it; otherwise, add the Value collection to its value as a collection.
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-#############################################################################>
-
-$typeName = 'System.Collections.Hashtable'
-
-Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToString -ScriptBlock {
-    [System.Diagnostics.DebuggerHidden()]
-    param(
-        # The format you want to use when converting the hashtable into a multi-line string
-        [Parameter(Position=0)]
-        [ValidateNotNullOrEmpty()]
-        [ValidateSet('SingleLine','MultiLine')]
-        [System.String]
-        $Format = 'SingleLine',
-
-        # The indent you want to use when converting the hashtable into a multi-line string
-        [Parameter(Position=1)]
-        [ValidateNotNull()]
-        [System.Object]
-        $Indent = ' ' * 4
-    )
-    $kvpStrings = @()
-    if ($Format -eq 'MultiLine') {
-        $kvpSeparator = "`n"
-        $newline = "`n"
-    } else {
-        $Indent = ''
-        $kvpSeparator = ';'
-        $newline = ''
-    }
-    foreach ($key in $this.Keys) {
-        if (($key -is [System.String]) -and
-            ($key -match '\s')) {
-            $keyName = "'$($key -replace '''','''''')'"
-        } elseif ($key -is [System.Collections.Hashtable]) {
-            $keyName = $key.ToString('SingleLine')
+        if ($Dictionary.Keys -notcontains $key) {
+            $Dictionary.Add($key,$Value)
         } else {
-            $keyName = $key.ToString()
+            $Dictionary[$key] = @($Dictionary[$key]) + $Value
         }
-        if ($this[$key] -is [System.Collections.Hashtable]) {
-            $valueString = $this[$key].ToString($Format,$Indent)
-        } elseif ($this[$key] -is [System.String]) {
-            $valueString = "'$($this[$key].ToString() -replace '''','''''')'"
-        } else {
-            $valueString = $this[$key].ToString()
-        }
-        if ($Format -eq 'MultiLine') {
-            $valueString = $valueString -replace "`r`n|`r|`n","${newline}${Indent}"
-            $valueStrings = $valueString -split "${newline}"
-            for ($index = 0; $index -lt $valueStrings.Count; $index++) {
-                if ($valueStrings[$index].Length -gt ($host.UI.RawUI.BufferSize.Width - 1)) {
-                    $valueStrings[$index] = $valueStrings[$index].SubString(0,$host.UI.RawUI.BufferSize.Width - 4) + '...'
-                }
-            }
-            $valueString = $valueStrings -join "${newline}"
-        }
-        $kvpStrings += "${Indent}${keyName} = ${valueString}"
-    }
-    "@{${newline}$($kvpStrings -join $kvpSeparator)${newline}}"
-}
 
-Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptBlock {
-    [System.Diagnostics.DebuggerHidden()]
-    param(
-        # The hash table key for which you want to add an item to the collection
-        [Parameter(Position=0, Mandatory=$true)]
-        [ValidateNotNull()]
-        [System.Object]
-        $Key,
-
-        # The item(s) you want to add to the collection
-        [Parameter(Position=1, Mandatory=$true)]
-        [AllowNull()]
-        [System.Array]
-        $Value
-    )
-    # Add remaining arguments to the value collection for easier invocation
-    if ($args) {
-        $Value += $args
-    }
-    # Invoke a snippet to add the item to the collection
-    Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
-        Hashtable = $this
-             Keys = $Key
-            Value = $Value
+        #endregion
     }
 }
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUQH2g6RVBmPl75azZH8diT64O
-# BGygghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUALVODUX0dPs4L7JrEOu9wbxy
+# c3qgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -223,23 +148,23 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptB
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFF4E
-# jM/J1czuXlE3flnbFyeUGRZgMA0GCSqGSIb3DQEBAQUABIIBAJklh2lc6u5KBGXC
-# 9gXYroRX/nT8Pv7HeHtTQHomOmssL1SneJpi5qhVkOcF1waUhZVi82pCRhjxl4wN
-# ogeqIG2I6VQTtrw6+Yzce8d9hUBM+Gc4jbrI163b6fOK0EKdZBPHRQ+zFc8RXdGf
-# iP/zG+2vULD3mPX3xTqcRyXgvn65XpmhqItYxRdDrd0aXqaFIvBNll0kxRPw3SJY
-# hf6IfvIizf0vjmCYy7f6rucV12+73hwK6YabdXcX/lCcz4wP45njaUG/54Gu2fjb
-# nIrKILzXdK695z/o/nMhhogmWZAfwl21xro0un4cs0rFZcuOK614WLlq3xEZgpGQ
-# fMguboWhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFMGe
+# kbKcYzJHFpn10iYP6Kzd8TqxMA0GCSqGSIb3DQEBAQUABIIBAKFzS3Jjrlz//wAa
+# 039v6BEsCBE+KqW4ThDHbnqVBdqnjDkqB0aOTeKC6ehx30aPxF6E5Zfxim1KN49A
+# 2Z1oFZhi8dvUpyK17ffhntW3QIk+nndcA2TgHiTexbKfkqyD5HPBD5qRvEnstWky
+# VLgE2ObiC2oz0JN6vCVsc2O+DYKjE5ig8gSRSK/Lbiozuqhq2kL4pHSpt0D5XugY
+# /r4QCT7L/CSnw4rwYi0/KLuY9qE+Y2ycFe3koEPOtOhdNwjp7TWdK9nA7AmIsn7u
+# AmSVzLJVz+yIVsRy1F47Zlx+etx4nebgcM4JKh2dGp2IF5aT1K1KSMvnHUE1qpQr
+# ZZlzXJihggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDMwMTgwNjA0WjAjBgkqhkiG9w0BCQQxFgQUr0iv
-# G1O523OqKdLOVoxcD3eEdaAwDQYJKoZIhvcNAQEBBQAEggEAkKMGZpZDVZO7SZ92
-# HT5jU4y+A/b6a+cIYJETQGnT1KTW/Kp/zDx9IXjO7pESgD4hAbPXS8KhxkAoZbU4
-# gmAu/3QH1WSN7oAmapvA8E5bz9yX8o9jnuRj3hbOSWzh7T/AlU5d3jlEac3LpXpI
-# KQZvagT5XMr6Ji0wwMnw7wYrvDOJBcNxsOFp1y+gc6aWQb/KqQLz7UIbMzswgu3/
-# //LSBGtKvrBa7noz4d3Fcy+t8XQm6Ih9HlkdDGs2HDEUY1AOneVg5zboyRcgpCXc
-# huN8muGrtWzg0gD3wvVoYD+zTfr2pBrb9i8Km7aRXLXf7lSMuW89ymIQdpTIW3Lh
-# kHZGwg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMTA2MDcyNTUwWjAjBgkqhkiG9w0BCQQxFgQUQ+O/
+# ojX0pINiXwJjyOR/1d5Ax74wDQYJKoZIhvcNAQEBBQAEggEAf3p7mRDXdTALBPZ0
+# tcgIWpZTWyOLQM4kU8KDdWTdCTK83UOs3ZdK9MMKF0+fNNoeRlDKrn2Re4Nm6a5A
+# Lj5zQKkwN24ZJAqTmdiV1vDiVFAK3xlLPKVO7KqyY+fYHO7eklxTNaKjN8+g3Zks
+# DOHZFVvrHxe8Xgzf20J5+1Gynert1tHPOa0RSvT6U5qaqHzUrNh+mqEuKlUpzay+
+# fyaTIISN34S08TuwB/jpQ1JnhAflpX1Bzjxbe3snKrEU/dZOZuv+4e/fMQN52mXC
+# IXcumfQ48b3w4KBelN2TrJbU5/ippw676qAUSKxtpyRVtivPBgaHBZ5I9qmoyuTU
+# Il9n9Q==
 # SIG # End signature block

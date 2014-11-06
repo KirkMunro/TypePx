@@ -42,10 +42,10 @@ function Add-ScriptMethodData {
         $ScriptBlock
     )
     try {
-        Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
-            Hashtable = $script:TypeExtensions
-                 Keys = $TypeName
-                Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptMethodData -ArgumentList @($ScriptMethodName, $ScriptBlock)
+        Invoke-Snippet -Name Dictionary.AddArrayItem -Parameters @{
+            Dictionary = $script:TypeExtensions
+                  Keys = $TypeName
+                 Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptMethodData -ArgumentList @($ScriptMethodName, $ScriptBlock)
         }
     } catch {
         $PSCmdlet.ThrowTerminatingError($_)
@@ -54,8 +54,8 @@ function Add-ScriptMethodData {
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUBwdBlmRVNNU2HX3wZjEFqbMf
-# G3SgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU8JIwuLNmlpLG8Tla18OVwyYX
+# N/OgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -168,23 +168,23 @@ function Add-ScriptMethodData {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFBBc
-# t08IsYiLWJcGaSKPNmm1MSabMA0GCSqGSIb3DQEBAQUABIIBAJzhDWjtjB0rRhWj
-# uH5543NTY7ZfPIVVnETBUn9OZCiTijWnjOu+4/zKwr8jdHLRgZBiac76yhyg4lOT
-# AnRgcI2//2G5bDq6WO8MqDkyYNsBAeE6yuvZq1F3irIvuN17gHPk5icwC6yUSjv3
-# Ntu9YmTqfxY/F1aeEs7UQ5695sWBkFyy3GNWgrxpmwydgmAqgDO1q9n7q1GvMgpR
-# 9Wj2mWI4JshD6bk34zWIZjdTZR5aXHpoP4yBeIy5F7cAk3ZRCOJu8j52aXsI9pCN
-# Y1fSb6yilMbe8GVDLn6ZAW1KmDgP4ujpYbsB4kJCGthprZA9qRyi08rjBAZLBLm8
-# 5LyV1hqhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFP5W
+# L/5Gz3k+VO6EKY7Dx03P6noXMA0GCSqGSIb3DQEBAQUABIIBABYo47n85HFlqOer
+# LT71v6KxMoRUqR9KuKPEouYP/b6q0fAh+SR02M8b9KJSDRk3NlWKExIEgbziu0sm
+# hDBRkZw2SvmPh+7DTw1BXc9X05THNQY7xICvo6W23aM/Nzd42v9R7ExQPpEYF4Eb
+# vJATMoAEYwCjliX6zz9bgM/ZwrJwshFjp6MxMzpzh7SuelGoYXObEcrVOn7UwdJB
+# R34hDmzivSrZHnkdhnsbgPtjuMm5PtdyxTn+nmmXjyod6V83raWdIo0bK9fqipxH
+# axrKsL4bhUtmbfzyuBQhgAnqVMvLGsIQ6Dt4QSWC0tTMIKc23OHhbrOvMucJfG+M
+# TyzF0quhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDMwMTgwNjA5WjAjBgkqhkiG9w0BCQQxFgQUSeX0
-# Tq+/R7CCAxnoeV3nuzyoR6kwDQYJKoZIhvcNAQEBBQAEggEARkG8h6J/BsLWEVkL
-# +gpTz2GSIMHnPmaHkKx43BOi604L/QiN50KzlzIvREP3VaYQ8T3r+dfYkAGifamm
-# qtEWDxpEWSOKRs9Q/RaW9RYLccDiWiWzuJ17V9bCsgWe9Kigc6Eh0ep2quf6uzVM
-# RuESgZQO5m0YevSGXH6L27tR/kLtxwaDpSNCsIYaKGrSem4RUH6gM2viezMwo265
-# KEIUmXpdNSW8NTZSPKZQ24vVy510WeB+5cimsbtc3vpnL/SJOehVj6EHMzT9/JHZ
-# nidNqHx1AkcZ2NdD+C2nTiB63j5l1FJn+hho86NzqMNxAPRxnsSnHQtgTAjCtd8s
-# AKaYGg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMTA2MDcyNTQyWjAjBgkqhkiG9w0BCQQxFgQUXJ9p
+# OF+wNTIb/TgYTXViUOw7KwUwDQYJKoZIhvcNAQEBBQAEggEAbF5JdoAi5E2Y7gg3
+# SFrewqwlvd4FHjuIVt2CCdse0xA93AnpSKKlyF/gvR645vhDNw3WTIHf2CQoRW70
+# C0k9i9Zg50uDz7+svvnM5HvxywMb1pSnIUX0bKpGQAVcf4PsMk4UbDjHI/Sg/sAJ
+# DhDbjkRDMIP7HU/PSDDKMuY4vqg/Om92C1HLiIlJnmZs96Xqhzh/t1NdD+uuZJAk
+# jgbBtEamC91iV9yY2klq4G/abI/pOp3AZ8rwYvLHAzM/n9/Shrg/QWcyoQI8BvGS
+# L8CpbSVrEtXTSZq6SFQqML+wP4hBo47wgwO9E2bgqrwEFCz79eL0/4NYYbELx8IF
+# LCsKMQ==
 # SIG # End signature block

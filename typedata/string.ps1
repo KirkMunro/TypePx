@@ -24,6 +24,17 @@ limitations under the License.
 
 $typeName = 'System.String'
 
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Wrap -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The width you want to use when wrapping the string
+        [ValidateRange(1,[System.Int32]::MaxValue)]
+        [System.Int32]
+        $Width = $Host.UI.RawUI.BufferSize.Width
+    )
+    $this -split "`r`n|`r|`n" -replace "(.{1,${Width}})( +|`$`n?)|(.{1,${Width}})","`$1`$2`n" -replace '^\s+|\s+$' -split "`r`n|`r|`n" -replace '^\s+|\s+$' -join "`n"
+}
+
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToScriptBlock -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
@@ -97,8 +108,8 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetMD5Hash -ScriptBlo
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUAszss2i3hnbmLs3Eoo63A8I+
-# YJ+gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUakZKYoEqiar19zsBJ4ydF8NT
+# G3igghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -211,23 +222,23 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetMD5Hash -ScriptBlo
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFKC2
-# qG3PrYzHgh7f7OIPTGv2WJQiMA0GCSqGSIb3DQEBAQUABIIBAEytHfUSGEekENOS
-# cfsr0NG9d16Gt33eM+E9Se1NpqALVW22PB/9zDJ90Nd1GY7zeekbfiTSXd+tir/y
-# +A7fkT7zBEPPNSzbIkJRiFSxlj9fGOL0cHyFukZYk2xTB0hm23pShxXyypUdA34A
-# V9YF5tOaAX3AqZ5hmiEDqmmhkPpRjIyIhBbkytSK+d8o8WX27hhhtwJCKwpz29FS
-# dtGAMOj8+wGWxm1w7zgQJ+3/YY9uC6KZqWORXOxT5xSxAU+fxOOeyRwNWizy4waz
-# 6oMpwhRwrm8kXCv6FXiitl0v6vOZSSVKI0fXVVvyDKqFRiZuFpnl93UKPRFKbyan
-# szk8LTyhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIDn
+# o17HFvoTeQLq/ZUSiRvdmygbMA0GCSqGSIb3DQEBAQUABIIBAE9XAhrW7TTXUNC2
+# OwTh20DnQg1AIVZHTK204vJpK9YAsFqz4pOCF+X8BuTl1lr2jL1Ig09efb1Zl/9W
+# c7mVWHDShM7ZIaDEmPPw0DUdbwr6oeJBWOu81Qy8xuNv4AwKqdlFbtusH4c7d/J7
+# 9SR1eeklKcgc8w0co0aA5Q6awMywPpX9dhVkfzP4JVXtqWl+gS9pJRE0fwXvcMor
+# bNo9W+a5RFL3Oz0lKMIUJUL7t1ipibHmLQBqj4XiOBkOoOz8f6X3XPqv4Vf2gSXw
+# l67ZqgKWlEBKzbtFN0p/7Cc93E7pzxLbNcPIorjf9caKzbDodRcq68HXX1o0P4rH
+# 8SYhoD6hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDMwMTgwNjA0WjAjBgkqhkiG9w0BCQQxFgQUsCVL
-# mMNjtdaXs5mivhf15O2PPBYwDQYJKoZIhvcNAQEBBQAEggEADIQjqJzRxgxvXb3U
-# 7aM+8/C4rDeQPrV39grZcL9FXFPXKeFWa2i9mCg4O5nbfCKlmK5Q9iyVBNbXf69w
-# /Yyp9BAbz3Er375ubWUWVcD6C5xB091iHc1JE/DDNxYUHKwTvauaoAUt4sR3EE9H
-# V0l1+894dJhkI9/AeTGOzv4EuzKxw1cORIGUKrhuSHXaMzWtHX1CZz1hVmhSEVO2
-# Mfu6Z6/2M4QeK8+dZFaC2U2zwLfpkTxzo16gc2EpJaJTuhBmFgXwP8y2H3OEd4Uf
-# yyKsiOG/XQbwLeSb1TZzJuzSe/3R18kRA93uPKKOYJ9IChjWB2bLCssx3fKFlM3Q
-# 8c8g3A==
+# BgkqhkiG9w0BCQUxDxcNMTQxMTA2MDcyNTUzWjAjBgkqhkiG9w0BCQQxFgQUUFtV
+# gVOrv21VIcuwH2dzrtWjLqIwDQYJKoZIhvcNAQEBBQAEggEAOM2yyD3VnSu2ceFV
+# aBi3YkDe+S5doXD5aVMRpFcy/kTrXu3QN4vs3xjVVwManhoLFS/TwuEYc4E9hpWa
+# hx6SjLCH/eFlWk6IvnSoQBxVMg+lqX2gTXWAI9+OAvZM785K7L9NMuaXfOQEqYOg
+# dojD3HksEJYdZWMVPiEW6Sm9WpMayrZGudVDTvTTKsvLhQsj3U2681RhtYutw7YR
+# s9fstl2Gt+9qX9VMrj6iAhjgiERqmoYHCAchAkUe1rRG42I1ECG9DDx/O8V+OCBm
+# ST6y6+yjwWFPw+qGng3o/ztjhruD0MkjkKZ1x9c4hOz2BuiYzlV/4Zc+5m6ZbRkL
+# 9BsNww==
 # SIG # End signature block

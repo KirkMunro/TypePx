@@ -54,10 +54,10 @@ function Add-ScriptPropertyData {
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('SetScriptBlock')) {
             $constructorArguments += $SetScriptBlock
         }
-        Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
-            Hashtable = $script:TypeExtensions
-                 Keys = $TypeName
-                Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptPropertyData -ArgumentList $constructorArguments
+        Invoke-Snippet -Name Dictionary.AddArrayItem -Parameters @{
+            Dictionary = $script:TypeExtensions
+                  Keys = $TypeName
+                 Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptPropertyData -ArgumentList $constructorArguments
         }
     } catch {
         $PSCmdlet.ThrowTerminatingError($_)
@@ -66,8 +66,8 @@ function Add-ScriptPropertyData {
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUv/BVLq27XUue7BBnIdb0QHVF
-# 3b6gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUa31Me04QKfmqn20afXoYEOBd
+# Qu2gghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -180,23 +180,23 @@ function Add-ScriptPropertyData {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFKHl
-# 2rqxSSv001gcr8v3WHJ/zCjeMA0GCSqGSIb3DQEBAQUABIIBAEUOHP2PMIDA+50k
-# cbZgWhfNuBmnRVGneDEgrb7p5o3i4qiwYq3kg3dgD29erQ1lr1oybJF73vJDIOEB
-# cx7q2Q1v+UWQSC0l3AUOZRhWCfTtlMlM2Y6cSzxulQtazG6dld3fneiOr0zyMzbH
-# Nw089/Iqw1PjsmTehuAVEnxXiuDAdPGuFRd+jns6zB5iWUDB9YVvkGjfEn5A2Q3A
-# FEm0sba79zg8WyX3oB6fYT7hWrCabranP1tGoRqXe/5gm/H3gxXT3RfQhU8IPsIM
-# w2T+Ap6F8sCCuyjECyf1tooLeERuT14vnCiJdtx6e/qlrPy9fY1uiie1MiZ+VWf0
-# D7N8DmOhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFPw8
+# B+TrzjuQhaz6+yxDFqtI+hrRMA0GCSqGSIb3DQEBAQUABIIBAAlp3XSzFKDqBvyI
+# zj3C/FHwuqx6oRes6WENdN1rXVS6GHg+QTMaXezpzkwDuyGaGcnh9ySZ2ZIhtUtc
+# n+UEiY0+UOyGYj4eBj2DIbMgvP0iGhcZNlb0YyKFBoo5Xu5qTU3hiqg/h86tOFZ5
+# Ty8s9ukIwXvz/kTmOfeKDIcdlgSqSTNkh9dGOHjIT/1fdVKhwNC7cvnQBbvqbpvx
+# mfEa0E0ZYArmAQi7577NoQnubsERf1RC+zMiHW5MFsKKDD3s+DwRBeaJnsH2w0KW
+# 75ADCWts/eBAld816bcwYjCXr8ZyUkZ/2K6q8r4DMryWVlOQBeMt3De9ymOVNku3
+# IYybvU2hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMDMwMTgwNjA5WjAjBgkqhkiG9w0BCQQxFgQUyBZ9
-# /WPRSnjUD7cg3XUfjsliUcMwDQYJKoZIhvcNAQEBBQAEggEABInkKcwSkoLGwGlE
-# vrv8VlZsVRuGHBYz7nQOZG+rvgZagsXsn1fpjGbyYX8FhaMXsC8ZaZC+N2j8Jdsp
-# GCQUAd5Mv7hZGq30E+aDfNcyPBtMGW7owhwXh9aE84v4bHw6ZuigWs5VonItfd6i
-# AzuwKmlJyCaGnPfuOVKfPKM0B3kvNkrLn1vEy7l6Q5B1Qf0oGhJVslasQlbGoAU0
-# L7vtRd9jJMjtOt4quo/OfYyFjELfO0h6aRlS1eHNLEz/EosHYqDrSbBUKejmtIP8
-# RjdX6DC3NhspdTKiBiT85jaHnNYpt/t4z7RDr9wzzQDVrtGix1Cdo3O9rtQy4FcD
-# t+0Z+A==
+# BgkqhkiG9w0BCQUxDxcNMTQxMTA2MDcyNTQ5WjAjBgkqhkiG9w0BCQQxFgQURF+r
+# Gs4+bXu0at3XWgRQQvReiKEwDQYJKoZIhvcNAQEBBQAEggEAFa/1CM8LfZddo1NR
+# HasL4xvCd1po2O/lyz/cUJMS/v56vVCKJ7Tw4vIRcUQf3nDaC82phCxrwOPxG4e9
+# nRsr+olV/4L4na5JIj/pxhvJB9BvfNvBE7U8GskSPAuw6+LWpXHuxNT4kv1WZcFo
+# 4WDItyzZ/QEabD0wur66++G1qOD3943yvoXY7wKgka9CKDq224m9in3j/z75Ttdq
+# Jqh8Iq5RVWEX5N3eZIYy45u9qWqiuBiJ5bPo0j+EPcHyExEdmSEYilfzZRrW1yTL
+# IYhn+Po2y6GmFPE/LMaT69vHZ7D7O4nL/GD8MFkyU0EkXoLN4S0LmrmfUCzRiTuL
+# icD3zg==
 # SIG # End signature block
