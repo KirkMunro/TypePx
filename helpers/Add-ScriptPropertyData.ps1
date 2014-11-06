@@ -54,10 +54,10 @@ function Add-ScriptPropertyData {
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('SetScriptBlock')) {
             $constructorArguments += $SetScriptBlock
         }
-        Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
-            Hashtable = $script:TypeExtensions
-                 Keys = $TypeName
-                Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptPropertyData -ArgumentList $constructorArguments
+        Invoke-Snippet -Name Dictionary.AddArrayItem -Parameters @{
+            Dictionary = $script:TypeExtensions
+                  Keys = $TypeName
+                 Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptPropertyData -ArgumentList $constructorArguments
         }
     } catch {
         $PSCmdlet.ThrowTerminatingError($_)

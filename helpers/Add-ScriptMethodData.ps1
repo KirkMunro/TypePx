@@ -42,10 +42,10 @@ function Add-ScriptMethodData {
         $ScriptBlock
     )
     try {
-        Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
-            Hashtable = $script:TypeExtensions
-                 Keys = $TypeName
-                Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptMethodData -ArgumentList @($ScriptMethodName, $ScriptBlock)
+        Invoke-Snippet -Name Dictionary.AddArrayItem -Parameters @{
+            Dictionary = $script:TypeExtensions
+                  Keys = $TypeName
+                 Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptMethodData -ArgumentList @($ScriptMethodName, $ScriptBlock)
         }
     } catch {
         $PSCmdlet.ThrowTerminatingError($_)

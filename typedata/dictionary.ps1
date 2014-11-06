@@ -22,9 +22,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #############################################################################>
 
-$typeName = 'System.Collections.Hashtable'
+$typeNames = @(
+    'System.Collections.Hashtable'
+    'System.Collections.Specialized.OrderedDictionary'
+)
 
-Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToString -ScriptBlock {
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName ToString -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
         # The format you want to use when converting the hashtable into a multi-line string
@@ -38,7 +41,13 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToString -ScriptBlock
         [Parameter(Position=1)]
         [ValidateNotNull()]
         [System.Object]
-        $Indent = ' ' * 4
+        $Indent = ' ' * 4,
+
+        # Reserved for internal use
+        [Parameter()]
+        [ValidateNotNull()]
+        [System.Int32]
+        $Reserved = 0
     )
     $kvpStrings = @()
     if ($Format -eq 'MultiLine') {
@@ -49,6 +58,7 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToString -ScriptBlock
         $kvpSeparator = ';'
         $newline = ''
     }
+    $equals = ' = '
     foreach ($key in $this.Keys) {
         if (($key -is [System.String]) -and
             ($key -match '\s')) {
@@ -58,29 +68,33 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToString -ScriptBlock
         } else {
             $keyName = $key.ToString()
         }
-        if ($this[$key] -is [System.Collections.Hashtable]) {
-            $valueString = $this[$key].ToString($Format,$Indent)
-        } elseif ($this[$key] -is [System.String]) {
-            $valueString = "'$($this[$key].ToString() -replace '''','''''')'"
+        $leadInLength = $Indent.Length * ($Reserved + 1) + $keyName.Length + $equals.Length
+        if ($this[$key].GetType().GetInterface('IDictionary',$true)) {
+            $valueString = $this[$key].ToString($Format,$Indent,$Reserved + 1)
         } else {
-            $valueString = $this[$key].ToString()
-        }
-        if ($Format -eq 'MultiLine') {
-            $valueString = $valueString -replace "`r`n|`r|`n","${newline}${Indent}"
-            $valueStrings = $valueString -split "${newline}"
-            for ($index = 0; $index -lt $valueStrings.Count; $index++) {
-                if ($valueStrings[$index].Length -gt ($host.UI.RawUI.BufferSize.Width - 1)) {
-                    $valueStrings[$index] = $valueStrings[$index].SubString(0,$host.UI.RawUI.BufferSize.Width - 4) + '...'
-                }
+            if ($this[$key] -is [System.String]) {
+                $valueString = "'$($this[$key] -replace '''','''''')'"
+            } else {
+                $valueString = $this[$key].ToString()
             }
-            $valueString = $valueStrings -join "${newline}"
+            if ($Format -eq 'MultiLine') {
+                $valueString = $valueString -replace "`r`n|`r|`n",${newline}
+                $valueStrings = @($valueString -split "${newline}")
+                for ($index = 0; $index -lt $valueStrings.Count; $index++) {
+                    if ($valueStrings[$index].Length -gt ($host.UI.RawUI.BufferSize.Width - 1)) {
+                        $valueSpace = $host.UI.RawUI.BufferSize.Width - $leadInLength
+                        $valueStrings[$index] = $valueStrings[$index].Wrap($valueSpace - 1)
+                    }
+                }
+                $valueString = $valueStrings -join "${newline}" -replace "`n","`n$(' ' * $leadInLength)"
+            }
         }
-        $kvpStrings += "${Indent}${keyName} = ${valueString}"
+        $kvpStrings += "$($Indent * ($Reserved + 1))${keyName}${equals}${valueString}"
     }
-    "@{${newline}$($kvpStrings -join $kvpSeparator)${newline}}"
+    "@{${newline}$($kvpStrings -join $kvpSeparator)${newline}$($Indent * $Reserved)}"
 }
 
-Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptBlock {
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName AddArrayItem -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
         # The hash table key for which you want to add an item to the collection
@@ -100,9 +114,9 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName AddArrayItem -ScriptB
         $Value += $args
     }
     # Invoke a snippet to add the item to the collection
-    Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
-        Hashtable = $this
-             Keys = $Key
-            Value = $Value
+    Invoke-Snippet -Name Dictionary.AddArrayItem -Parameters @{
+        Dictionary = $this
+              Keys = $Key
+             Value = $Value
     }
 }

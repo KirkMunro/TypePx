@@ -54,10 +54,10 @@ function Add-AliasPropertyData {
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('AliasPropertyType')) {
             $constructorArguments += $AliasPropertyType
         }
-        Invoke-Snippet -Name Hashtable.AddArrayItem -Parameters @{
-            Hashtable = $script:TypeExtensions
-                 Keys = $TypeName
-                Value = New-Object -TypeName System.Management.Automation.Runspaces.AliasPropertyData -ArgumentList $constructorArguments
+        Invoke-Snippet -Name Dictionary.AddArrayItem -Parameters @{
+            Dictionary = $script:TypeExtensions
+                  Keys = $TypeName
+                 Value = New-Object -TypeName System.Management.Automation.Runspaces.AliasPropertyData -ArgumentList $constructorArguments
         }
     } catch {
         $PSCmdlet.ThrowTerminatingError($_)

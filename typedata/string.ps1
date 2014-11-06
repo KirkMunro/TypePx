@@ -24,6 +24,17 @@ limitations under the License.
 
 $typeName = 'System.String'
 
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Wrap -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # The width you want to use when wrapping the string
+        [ValidateRange(1,[System.Int32]::MaxValue)]
+        [System.Int32]
+        $Width = $Host.UI.RawUI.BufferSize.Width
+    )
+    $this -split "`r`n|`r|`n" -replace "(.{1,${Width}})( +|`$`n?)|(.{1,${Width}})","`$1`$2`n" -replace '^\s+|\s+$' -split "`r`n|`r|`n" -replace '^\s+|\s+$' -join "`n"
+}
+
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToScriptBlock -ScriptBlock {
     [System.Diagnostics.DebuggerHidden()]
     param(
