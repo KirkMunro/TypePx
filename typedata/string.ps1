@@ -43,7 +43,7 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToScriptBlock -Script
         $VariableValues = @{}
     )
     # Invoke a snippet to convert the string to a script block
-    Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
+    . (Get-Module TypePx) Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
         String = $this
         VariableValues = $VariableValues
     }
@@ -53,7 +53,7 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Expand -ScriptBlock {
     [System.Diagnostics.DebuggerStepThrough()]
     param()
     # Invoke a snippet to expand the string
-    Invoke-Snippet -Name String.Expand -Parameters @{String = $this}
+    . (Get-Module TypePx) Invoke-Snippet -Name String.Expand -Parameters @{String = $this}
 }
 
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName MatchAny -ScriptBlock {
