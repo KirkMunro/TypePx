@@ -43,7 +43,7 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToScriptBlock -Script
         $VariableValues = @{}
     )
     # Invoke a snippet to convert the string to a script block
-    Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
+    . (Get-Module TypePx) Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
         String = $this
         VariableValues = $VariableValues
     }
@@ -53,7 +53,7 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Expand -ScriptBlock {
     [System.Diagnostics.DebuggerStepThrough()]
     param()
     # Invoke a snippet to expand the string
-    Invoke-Snippet -Name String.Expand -Parameters @{String = $this}
+    . (Get-Module TypePx) Invoke-Snippet -Name String.Expand -Parameters @{String = $this}
 }
 
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName MatchAny -ScriptBlock {
@@ -108,8 +108,8 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetMD5Hash -ScriptBlo
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUakZKYoEqiar19zsBJ4ydF8NT
-# G3igghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU/rIL8nkwoEa4JpeEKZGkWrNx
+# 6+qgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -222,23 +222,23 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetMD5Hash -ScriptBlo
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFIDn
-# o17HFvoTeQLq/ZUSiRvdmygbMA0GCSqGSIb3DQEBAQUABIIBAE9XAhrW7TTXUNC2
-# OwTh20DnQg1AIVZHTK204vJpK9YAsFqz4pOCF+X8BuTl1lr2jL1Ig09efb1Zl/9W
-# c7mVWHDShM7ZIaDEmPPw0DUdbwr6oeJBWOu81Qy8xuNv4AwKqdlFbtusH4c7d/J7
-# 9SR1eeklKcgc8w0co0aA5Q6awMywPpX9dhVkfzP4JVXtqWl+gS9pJRE0fwXvcMor
-# bNo9W+a5RFL3Oz0lKMIUJUL7t1ipibHmLQBqj4XiOBkOoOz8f6X3XPqv4Vf2gSXw
-# l67ZqgKWlEBKzbtFN0p/7Cc93E7pzxLbNcPIorjf9caKzbDodRcq68HXX1o0P4rH
-# 8SYhoD6hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFOc8
+# FYqy5yd2Gf0E0YNyJL/jHaPYMA0GCSqGSIb3DQEBAQUABIIBAAb4cvICHvviGXyv
+# PLtSV8Wso4VFZeJE43lbLGN0+fJ0u7Dx1SV/gaXeFw2wP4ofahudlztY7Yry9mkU
+# RUJ00tJi5HibJH689b1IP4XocqpRKW+TnonYAQLwM/dVQmHpLm78T1FF+9UWTBdg
+# qeSLVc4PVR630EbQxed1KvmFPMOOht57erommT7ROkm2NTNFX6uKc7UVsOVuUPcX
+# SCxPLj6d0IaFkxkaQX7e0V1CatkeITORRNe/ozLhU+M8nIAOJ+sNBgoT+nILaEeT
+# twNYpGTrvTFuL41J6IWPt7W+fV/b1Vh8J8QR4AxXl8zWWmOTaIq/DB6/eJNklSQN
+# D+gidRmhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMTA2MDcyNTUzWjAjBgkqhkiG9w0BCQQxFgQUUFtV
-# gVOrv21VIcuwH2dzrtWjLqIwDQYJKoZIhvcNAQEBBQAEggEAOM2yyD3VnSu2ceFV
-# aBi3YkDe+S5doXD5aVMRpFcy/kTrXu3QN4vs3xjVVwManhoLFS/TwuEYc4E9hpWa
-# hx6SjLCH/eFlWk6IvnSoQBxVMg+lqX2gTXWAI9+OAvZM785K7L9NMuaXfOQEqYOg
-# dojD3HksEJYdZWMVPiEW6Sm9WpMayrZGudVDTvTTKsvLhQsj3U2681RhtYutw7YR
-# s9fstl2Gt+9qX9VMrj6iAhjgiERqmoYHCAchAkUe1rRG42I1ECG9DDx/O8V+OCBm
-# ST6y6+yjwWFPw+qGng3o/ztjhruD0MkjkKZ1x9c4hOz2BuiYzlV/4Zc+5m6ZbRkL
-# 9BsNww==
+# BgkqhkiG9w0BCQUxDxcNMTQxMTA4MjMzMzMyWjAjBgkqhkiG9w0BCQQxFgQUlcM+
+# CES4Azznjvj6jgbmbN1ee60wDQYJKoZIhvcNAQEBBQAEggEAMcMU7tCOPTG1DUX1
+# sF/Lgj+UOLQqRDqo8VaMUxwdwmJMneSaNSy1zw1E+Qfd4L74hbhiOet3LWViHtUX
+# TgTVe/pXrw5ZaYma1zNSwINEPwYgRMTdOQSVhQL6g2kADqlfmG3n1Iq/pVigj4yV
+# zNLZAk324iXLsiXPfgEl00b1q0JGf++lXwvxh1pA2TTHfnR8wZaN2KWntX+PnFkO
+# PNiCHVcoEo4bIReFYaUK/I8F2Ktb1dHqafMTObrI19KLb5/bMBANHe0tU3qu19nn
+# TeZbSPpfexWMSoMyOpmgLubjEUax9fBDM+GSbO/L51Fmihce6PLb+MpTfkvk+o18
+# nvScMg==
 # SIG # End signature block
