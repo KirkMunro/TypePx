@@ -85,12 +85,13 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
             if ($args) {
                 $passThruParameters['ArgumentList'] = $args
             }
-            $results = $this | ForEach-Object @passThruParameters
+            $results = @($this | ForEach-Object @passThruParameters)
         } elseif ($Object -is [System.Type]) {
             # Convert the items in the collection to the type specified
             foreach ($item in $this) {
                 $results += $item -as $Object
             }
+            $results = $results -as ("System.Collections.ObjectModel.Collection``1[$($Object.FullName)]" -as [System.Type])
         } elseif ($Object -is [System.String]) {
             foreach ($item in $this) {
                 if ($member = $item.PSObject.Members[$Object -as [System.String]]) {
@@ -111,15 +112,19 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
                 }
             }
         }
-        # Return the results in an objectmodel collection to the caller
-        if ($results) {
-            $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-            ,$results
+        if ($Object -isnot [System.Type]) {
+            # Return the results in an objectmodel collection to the caller
+            if ($results) {
+                $results = $results -as [System.Management.Automation.PSObject[]] -as [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+            } else {
+                $results = New-Object -TypeName 'System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]'
+            }
         }
+        ,$results
     }
 
     Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName where -ScriptBlock {
-        [System.Diagnostics.DebuggerStepThrough()]
+#        [System.Diagnostics.DebuggerStepThrough()]
         param(
             # The conditional expression that we are evaluating
             [Parameter(Position=0, Mandatory=$true)]
@@ -149,7 +154,7 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
                 if ($NumberToReturn -eq 0) {
                     $NumberToReturn = 1
                 }
-                $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                $results = @($this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn)
                 break
             }
             'Last' {
@@ -157,7 +162,7 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
                 if ($NumberToReturn -eq 0) {
                     $NumberToReturn = 1
                 }
-                $results = $this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn
+                $results = @($this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn)
                 break
             }
             'SkipUntil' {
@@ -215,26 +220,30 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
                         $collection1 += $item
                     }
                 }
-                $collection0 = $collection0 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-                $collection1 = $collection1 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                $collection0 = $collection0 -as [System.Management.Automation.PSObject[]] -as [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+                $collection1 = $collection1 -as [System.Management.Automation.PSObject[]] -as [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
                 $results = @($collection0,$collection1)
                 break
             }
             default {
                 # Filter using the expression, to a maximum count if one was provided (default to all)
                 if ($NumberToReturn -eq 0) {
-                    $results = $this | Where-Object -FilterScript $Expression
+                    $results = @($this | Where-Object -FilterScript $Expression)
                 } else {
-                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                    $results = @($this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn)
                 }
                 break
             }
         }
-        # Return the results in an objectmodel collection to the caller
-        if ($results) {
-            $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-            ,$results
+        if ($Mode -ne 'Split') {
+            # Return the results in an objectmodel collection to the caller
+            if ($results) {
+                $results = $results -as [System.Management.Automation.PSObject[]] -as [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+            } else {
+                $results = New-Object -TypeName 'System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]'
+            }
         }
+        ,$results
     }
 }
 
