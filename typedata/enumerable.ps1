@@ -85,12 +85,13 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
             if ($args) {
                 $passThruParameters['ArgumentList'] = $args
             }
-            $results = $this | ForEach-Object @passThruParameters
+            $results = @($this | ForEach-Object @passThruParameters)
         } elseif ($Object -is [System.Type]) {
             # Convert the items in the collection to the type specified
             foreach ($item in $this) {
                 $results += $item -as $Object
             }
+            $results = $results -as ("System.Collections.ObjectModel.Collection``1[$($Object.FullName)]" -as [System.Type])
         } elseif ($Object -is [System.String]) {
             foreach ($item in $this) {
                 if ($member = $item.PSObject.Members[$Object -as [System.String]]) {
@@ -111,15 +112,19 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
                 }
             }
         }
-        # Return the results in an objectmodel collection to the caller
-        if ($results) {
-            $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-            ,$results
+        if ($Object -isnot [System.Type]) {
+            # Return the results in an objectmodel collection to the caller
+            if ($results) {
+                $results = $results -as [System.Management.Automation.PSObject[]] -as [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+            } else {
+                $results = New-Object -TypeName 'System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]'
+            }
         }
+        ,$results
     }
 
     Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName where -ScriptBlock {
-        [System.Diagnostics.DebuggerStepThrough()]
+#        [System.Diagnostics.DebuggerStepThrough()]
         param(
             # The conditional expression that we are evaluating
             [Parameter(Position=0, Mandatory=$true)]
@@ -149,7 +154,7 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
                 if ($NumberToReturn -eq 0) {
                     $NumberToReturn = 1
                 }
-                $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                $results = @($this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn)
                 break
             }
             'Last' {
@@ -157,7 +162,7 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
                 if ($NumberToReturn -eq 0) {
                     $NumberToReturn = 1
                 }
-                $results = $this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn
+                $results = @($this | Where-Object -FilterScript $Expression | Select-Object -Last $NumberToReturn)
                 break
             }
             'SkipUntil' {
@@ -215,26 +220,30 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
                         $collection1 += $item
                     }
                 }
-                $collection0 = $collection0 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-                $collection1 = $collection1 -as [System.Collections.ObjectModel.Collection`1[System.Object]]
+                $collection0 = $collection0 -as [System.Management.Automation.PSObject[]] -as [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+                $collection1 = $collection1 -as [System.Management.Automation.PSObject[]] -as [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
                 $results = @($collection0,$collection1)
                 break
             }
             default {
                 # Filter using the expression, to a maximum count if one was provided (default to all)
                 if ($NumberToReturn -eq 0) {
-                    $results = $this | Where-Object -FilterScript $Expression
+                    $results = @($this | Where-Object -FilterScript $Expression)
                 } else {
-                    $results = $this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn
+                    $results = @($this | Where-Object -FilterScript $Expression | Select-Object -First $NumberToReturn)
                 }
                 break
             }
         }
-        # Return the results in an objectmodel collection to the caller
-        if ($results) {
-            $results = $results -as [System.Collections.ObjectModel.Collection`1[System.Object]]
-            ,$results
+        if ($Mode -ne 'Split') {
+            # Return the results in an objectmodel collection to the caller
+            if ($results) {
+                $results = $results -as [System.Management.Automation.PSObject[]] -as [System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]]
+            } else {
+                $results = New-Object -TypeName 'System.Collections.ObjectModel.Collection`1[System.Management.Automation.PSObject]'
+            }
         }
+        ,$results
     }
 }
 
@@ -349,8 +358,8 @@ Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Sum -ScriptBlock {
 # SIG # Begin signature block
 # MIIZIAYJKoZIhvcNAQcCoIIZETCCGQ0CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHeQBZD8KbydtEk53W7blljz4
-# roGgghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUyp0CqWQZGfSdCkZVR9LaheFp
+# CXegghRWMIID7jCCA1egAwIBAgIQfpPr+3zGTlnqS5p31Ab8OzANBgkqhkiG9w0B
 # AQUFADCBizELMAkGA1UEBhMCWkExFTATBgNVBAgTDFdlc3Rlcm4gQ2FwZTEUMBIG
 # A1UEBxMLRHVyYmFudmlsbGUxDzANBgNVBAoTBlRoYXd0ZTEdMBsGA1UECxMUVGhh
 # d3RlIENlcnRpZmljYXRpb24xHzAdBgNVBAMTFlRoYXd0ZSBUaW1lc3RhbXBpbmcg
@@ -463,23 +472,23 @@ Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Sum -ScriptBlock {
 # aWdpY2VydC5jb20xLjAsBgNVBAMTJURpZ2lDZXJ0IEFzc3VyZWQgSUQgQ29kZSBT
 # aWduaW5nIENBLTECEA3/99JYTi+N6amVWfXCcCMwCQYFKw4DAhoFAKB4MBgGCisG
 # AQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFHeG
-# X0dkIGVmihpNhJZlk5rMLxamMA0GCSqGSIb3DQEBAQUABIIBAFlEhTO39RhSD0zM
-# dtEMpw+Z7x7Z9wXoGI6E8AW5KTlWl7qGFUYi9JLLQL35fV9bA+9PJRjrclv17zQU
-# +vRKCrM4/P2FK0KZ2LTvAu2IRBptAukhjGPK1rCiltzhxiuY4jy7Qm5jmBcE7dD6
-# HUWa9+batNsbJFQKiODM9FA5YwX+Ze+eGmuHJYkeoI2+Ot5aHam4Yeh306j6owv+
-# 41VR14SOCMJXaf2SJY+PooRaVZI4VeeTCUVwUEUtkz+hFjUeoxN34SBaY1HLvzrT
-# IbuLyCQCaqNgLr33VbKflWJjAoTOTz2/+dF1YiQGJj0v+yq0Kzqrka+H/NBysSt0
-# Z6+pXUGhggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkEMRYEFK6I
+# qZ7FSuSspPBf6Ke8yHtYxYGNMA0GCSqGSIb3DQEBAQUABIIBAL3hO89g3KfMUb2B
+# 43SrdcobJ6vatBrZu7L1O3d82xzFmDoR/zlyqzgx9shEG2hR/Pr+EtgB/wvCXkdJ
+# +gNx+u/TZKUVYDc258cbCmxbaIcRKesBdG6Ac3gnB6tuoLOVFqNL7i1KsSK3dK1s
+# 8bWYFzJmpkBIMlP/DZpMFMpbnwxEwGGJLaOMwzTcCCOe+3D6n3nXNu7aMI02ar0P
+# c9ITYJqx3X2bAnmMhF8R/2wCngsGQX7AE/3eWD47wajriuxqIWOcd99TDFT9oKnm
+# tNyWCEPM6fXSPzUS9lNu9W9+nWMiUxous2kD4PP9RRq/CECf2bDuDQM0vb6a009t
+# YiEXLC6hggILMIICBwYJKoZIhvcNAQkGMYIB+DCCAfQCAQEwcjBeMQswCQYDVQQG
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMTA4MjMzMzMyWjAjBgkqhkiG9w0BCQQxFgQUx+dl
-# QcaNYSrOD8LXBPSVNyB85ncwDQYJKoZIhvcNAQEBBQAEggEASK2QzkTJ3/40aeSD
-# MevsGApYmqHw7v92McobCgv87AnXGc5Kotufhb8/0d5OkEIcMvyMT05oswnRsHbY
-# o9+AMIRXU39XLPL32+faAHeb7mJ6tC/wzWqxdEgjGln0mHEkENFI5uCkXzkz0ufO
-# 1CvrLPyh+Ivia8qbgX6F/a7wOrFkz8didClkkKvtkm7VUm26D3nzd4a+Du/hpviV
-# 9AuGVqIPHXOp4f9G/NmtVTghImOv0HtWfthYTFMmCTPLeZtQMwMsl885pd7rEjnX
-# HisCQcqjpH2gIkBOuHADFLyYGPVqwIOPYst5XxKlOfqp0nkeBvdPDZUKjgESxfUF
-# tSFhWg==
+# BgkqhkiG9w0BCQUxDxcNMTQxMTE0MjExNDA2WjAjBgkqhkiG9w0BCQQxFgQUbI6/
+# 04P6n+j7quHz9IlWDp3WRWowDQYJKoZIhvcNAQEBBQAEggEALc5wXvrERJb57BaJ
+# avUWEwLWzkcPYe+hWrLm4mpZohO7+YUZY80jIetkjwYJNJn/Vxlj72flOubV2v+d
+# 6TxbXgHODhNOTdn7Tud7/mUv8FpEYkG+adE2J3IW+SG+drD5KzdRvFaTawj3bXSD
+# twgrWoj5w/qJkCNbO2HKiu1LSV1u+E+xdUHLGk3YjMoeB0fCxdwRYtoIEyqibxn8
+# pV5CV3DiBEU4yxMm4+XAbUlRLAZXKkgtV6zjGnJsCifXXO8gagSv8jZ0HFfTV5Zj
+# Lo9WtHYsgoyUo0pe3+FHF7IFG4/BvuUrm0W5WAhCL7n8xisbj5/yr0q2b+jdQ9Of
+# lyg5fw==
 # SIG # End signature block
