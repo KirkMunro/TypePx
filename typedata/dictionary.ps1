@@ -282,12 +282,12 @@ Add-ScriptMethodData -TypeName $dictionaryTypeNames -ScriptMethodName AddArrayIt
 # EwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xMDAuBgNVBAMTJ1N5
 # bWFudGVjIFRpbWUgU3RhbXBpbmcgU2VydmljZXMgQ0EgLSBHMgIQDs/0OMj+vzVu
 # BNhqmBsaUDAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMTQxMTE0MjExNDE0WjAjBgkqhkiG9w0BCQQxFgQUc59W
-# I4WcmWEhuZ5iLhNzc+lUEYgwDQYJKoZIhvcNAQEBBQAEggEAT5Qr1Dq/tyuwlMgx
-# 2yytvrdDblBzGBlk+nZiWxB+R4vTv2uFaEt6/NznlHsKj95usoJ7xYtHlyCXuicZ
-# 41WMGnocrqlduuVfyQam6m9hznss6/Wpa1DJHK69cfyS+li0H0BGng/BHQ5H3qOA
-# It0nj373RlZSZg1ftwIIn9/rxc0oXFjJow20foneWITKcVReK5awdwhoVq9pedmF
-# S/AKeiuTTTgfjdneckSkiFA6hybUuYdBTKf8Yf5rfaZRibDR7+krplg+hkWRd7Rm
-# EH1RAJE+tFRQ/HzooTMAktkaM+w2m7bBy18PXp8N/OQnsgZHTYYjmqepvq8/lu5v
-# iA6bbw==
+# BgkqhkiG9w0BCQUxDxcNMTQxMTE3MDIyNzE0WjAjBgkqhkiG9w0BCQQxFgQUc59W
+# I4WcmWEhuZ5iLhNzc+lUEYgwDQYJKoZIhvcNAQEBBQAEggEAJY67q7wxe/UnKrxg
+# 9BeeJol1jNM13u+SKUQ6xlveVkUt4Ys5ah4CL5yf+r4AeYSMjntP1T0SOWSv6+hT
+# 2mN8wqBgtnSXR5MtFcCbcderZZ2DkYjQx2S+T6+f7/C/baaveNHP4Y54+OxOneTP
+# Zr331MMpBkj67YOl5x79UWE0qZ86peC5IYKXcKbVsvjsqx9gIO80dSlj7icuf+IR
+# 7hW17j9kA+NeLuFppCuXYcCh78OI7RBiEmQViYfubgJaYg6eX5/YbTChQ+iULLra
+# S1NKwVpPIAAjRUuhynKqtGXZdjvN8lgvmgkfunkfk+EVeclw9ncG+Yqf1LPwYJMt
+# eu4X1A==
 # SIG # End signature block
