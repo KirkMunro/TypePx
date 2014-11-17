@@ -25,7 +25,7 @@ limitations under the License.
 @{
       ModuleToProcess = 'TypePx.psm1'
 
-        ModuleVersion = '2.0.0.17'
+        ModuleVersion = '2.0.0.18'
 
                  GUID = 'cacd8e78-b36a-4c37-90f8-9f8e2879abd6'
 
@@ -72,8 +72,6 @@ limitations under the License.
                         'helpers\Add-AliasPropertyData.ps1'
                         'helpers\Add-ScriptMethodData.ps1'
                         'helpers\Add-ScriptPropertyData.ps1'
-                        'scripts\Install-TypePxModule.ps1'
-                        'scripts\Uninstall-TypePxModule.ps1'
                         'snippets\Dictionary.AddArrayItem.ps1'
                         'snippets\String.Expand.ps1'
                         'snippets\String.ToScriptBlock.ps1'

@@ -70,10 +70,10 @@ unless you want it to take longer), and invoke one of the following commands:
 ```powershell
 # If you want to install TypePx for all users or update a version already installed
 # (recommended, requires elevation for new install for all users)
-& ([scriptblock]::Create((iwr -uri http://tinyurl.com/Install-ModuleFromGitHub).Content)) -ModuleName TypePx,SnippetPx
+& ([scriptblock]::Create((iwr -uri http://tinyurl.com/Install-GitHubHostedModule).Content)) -ModuleName TypePx,SnippetPx
 
 # If you want to install TypePx for the current user
-& ([scriptblock]::Create((iwr -uri http://tinyurl.com/Install-ModuleFromGitHub).Content)) -ModuleName TypePx,SnippetPx -Scope CurrentUser
+& ([scriptblock]::Create((iwr -uri http://tinyurl.com/Install-GitHubHostedModule).Content)) -ModuleName TypePx,SnippetPx -Scope CurrentUser
 ```
 
 ### Loading the TypePx module
