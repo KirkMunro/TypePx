@@ -130,7 +130,7 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Slice -ScriptBlock {
         $results += ,($slice.ToArray() -as $this.GetType())
     }
     # Now return the sliced up array, considering the number of items because of how PowerShell unravels arrays
-    if ($results.Count -eq 1) {
+    if ($results.Count -le 1) {
         ,$results
     } else {
         $results

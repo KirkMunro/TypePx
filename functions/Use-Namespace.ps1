@@ -38,7 +38,7 @@ limitations under the License.
 
     This command points adds type accelerators for every exported type from the System.Xml namespace.
 .EXAMPLE
-    PS C:\> Use-TypeAccelerator -Namespace System.Windows.Forms -ScriptBlock {
+    PS C:\> Use-Namespace -Namespace System.Windows.Forms -ScriptBlock {
     >> [MessageBox]::Show('Hello world!') > $null
     >> }
 
