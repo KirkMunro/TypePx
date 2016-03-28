@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ if ($PSVersionTable.PSVersion -lt [System.Version]'4.0') {
     }
 
     Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName where -ScriptBlock {
-#        [System.Diagnostics.DebuggerStepThrough()]
+        [System.Diagnostics.DebuggerStepThrough()]
         param(
             # The conditional expression that we are evaluating
             [Parameter(Position=0, Mandatory=$true)]
@@ -354,4 +354,26 @@ Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Sum -ScriptBlock {
         $this.foreach({$total += $_})
     }
     $total
+}
+
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Take -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [Parameter(Position=0)]
+        [ValidateNotNull()]
+        [System.Int32]
+        $Count
+    )
+    [System.Linq.Enumerable]::Take([object[]]($this),$Count)
+}
+
+Add-ScriptMethodData -TypeName $typeNames -ScriptMethodName Skip -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        [Parameter(Position=0)]
+        [ValidateNotNull()]
+        [System.Int32]
+        $Count
+    )
+    [System.Linq.Enumerable]::Skip([object[]]($this),$Count)
 }

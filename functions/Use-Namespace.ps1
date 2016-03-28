@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ function Use-Namespace {
         try {
             #region Load the current type accelerators.
 
-            [System.Collections.Hashtable]$initialTypeAccelerators = $script:typeAcceleratorsType::Get
+            [System.Collections.Hashtable]$initialTypeAccelerators = $script:TypeAcceleratorsType::Get
 
             #endregion
 
@@ -115,19 +115,19 @@ function Use-Namespace {
                             if ($NamespaceCollection) {
                                 $NamespaceCollection = @($NamespaceCollection -replace '^([^,]+),.*$','$1')
                                 foreach ($namespaceItem in $NamespaceCollection) {
-                                    if (($namespaceItem -notmatch '^System\.') -and ($_.FullName -match "^System\.$namespaceItem\.")) {
-                                        $namespaceItem = "System.$namespaceItem"
+                                    if (($namespaceItem -notmatch '^System\.') -and ($_.FullName -match "^System\.${namespaceItem}\.")) {
+                                        $namespaceItem = "System.${namespaceItem}"
                                     }
-                                    if ($_.FullName -match "^$namespaceItem\.") {
+                                    if ($_.FullName -match "^${namespaceItem}\.") {
                                         $acceleratorName = $_.Name
-                                        if ($_.FullName -ne "$namespaceItem.$acceleratorName") {
-                                            $acceleratorPrefix = $_.FullName -replace "^$namespaceItem\.(.+)\.$acceleratorName`$",'$1'
+                                        if ($_.FullName -ne "${namespaceItem}.${acceleratorName}") {
+                                            $acceleratorPrefix = $_.FullName -replace "^${namespaceItem}\.(.+)\.${acceleratorName}`$",'$1'
                                             if ($acceleratorPrefix -ne $_.FullName) {
-                                                $acceleratorName = "$acceleratorPrefix.$acceleratorName"
+                                                $acceleratorName = "${acceleratorPrefix}.${acceleratorName}"
                                             }
                                         }
                                         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('Alias')) {
-                                            $acceleratorName = "$Alias.$acceleratorName"
+                                            $acceleratorName = "${Alias}.${acceleratorName}"
                                         }
                                         Add-TypeAccelerator -Name $acceleratorName -Type $_
                                         break
@@ -136,7 +136,7 @@ function Use-Namespace {
                             } else {
                                 $acceleratorName = $_.Name
                                 if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('Alias')) {
-                                    $acceleratorName = "$Alias.$acceleratorName"
+                                    $acceleratorName = "${Alias}.${acceleratorName}"
                                 }
                                 Add-TypeAccelerator -Name $acceleratorName -Type $_
                             }
@@ -168,14 +168,25 @@ function Use-Namespace {
                             $assembly = [System.Reflection.Assembly]::LoadWithPartialName($item)
                             if ((-not $assembly) -and
                                 ($item -notmatch '^System\.')) {
-                                $assembly = [System.Reflection.Assembly]::LoadWithPartialName("System.$item")
+                                $assembly = [System.Reflection.Assembly]::LoadWithPartialName("System.${item}")
                                 if ($assembly) {
-                                    $item = "System.$item"
+                                    $item = "System.${item}"
                                 }
                             }
                         }
                         if ($assembly) {
                             & $sharedScript.ProcessAssembly -NamespaceCollection $item
+                        } else {
+                            $assemblies = [System.AppDomain]::CurrentDomain.GetAssemblies() `
+                                | Where-Object {
+                                    $_.GetTypes() `
+                                        | Where-Object {
+                                            $_.Namespace -match "^${item}" -or $_.Namespace -match "^System.${item}"
+                                        }
+                                }
+                            foreach ($assembly in $assemblies) {
+                                & $sharedScript.ProcessAssembly -NamespaceCollection $item
+                            }
                         }
                     }
 
@@ -223,13 +234,13 @@ function Use-Namespace {
             #region If -ScriptBlock was used, reset the type accelerators back to the previous state.
 
             if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('ScriptBlock')) {
-                foreach ($key in @($script:typeAcceleratorsType::Get | Select-Object -ExpandProperty Keys)) {
-                    $script:typeAcceleratorsType::Remove($key) > $null
+                foreach ($key in @($script:TypeAcceleratorsType::Get | Select-Object -ExpandProperty Keys)) {
+                    $script:TypeAcceleratorsType::Remove($key) > $null
                     if ($initialTypeAccelerators.ContainsKey($key)) {
-                        if (Get-Member -InputObject $script:typeAcceleratorsType -Name AddReplace -Static -ErrorAction Ignore) {
-                            $script:typeAcceleratorsType::AddReplace($key, $initialTypeAccelerators[$key])
+                        if (Get-Member -InputObject $script:TypeAcceleratorsType -Name AddReplace -Static -ErrorAction Ignore) {
+                            $script:TypeAcceleratorsType::AddReplace($key, $initialTypeAccelerators[$key])
                         } else {
-                            $script:typeAcceleratorsType::Add($key,$initialTypeAccelerators[$key])
+                            $script:TypeAcceleratorsType::Add($key,$initialTypeAccelerators[$key])
                         }
                     }
                 }

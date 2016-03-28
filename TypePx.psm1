@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,15 +22,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #############################################################################>
 
+#region Set up a module scope trap statement so that terminating errors actually terminate.
+
+trap {throw $_}
+
+#endregion
+
 #region Initialize the module.
 
-Invoke-Snippet -Name Module.Initialize
+Invoke-Snippet -Name Module.Initialize -ModuleName SnippetPx
+
+#endregion
+
+#region Build a cache of the snippets that are used repeatedly in this module.
+
+# Caching snippets greatly improves invocation performance later
+$SnippetCache = @{
+    'Dictionary.AddArrayItem' = Get-Snippet -Name Dictionary.AddArrayItem -ModuleName $PSModule.Name -NoHelp
+    'Dictionary.AddListItem'  = Get-Snippet -Name Dictionary.AddListItem  -ModuleName $PSModule.Name -NoHelp
+    'String.ToScriptBlock'    = Get-Snippet -Name String.ToScriptBlock    -ModuleName $PSModule.Name -NoHelp
+}
 
 #endregion
 
 #region Import helper (private) function definitions.
 
-Invoke-Snippet -Name ScriptFile.Import -Parameters @{
+Invoke-Snippet -Name ScriptFile.Import -ModuleName SnippetPx -Parameters @{
     Path = Join-Path -Path $PSModuleRoot -ChildPath helpers
 }
 
@@ -38,13 +55,13 @@ Invoke-Snippet -Name ScriptFile.Import -Parameters @{
 
 #region Define a hashtable to track the type extensions that are added.
 
-$TypeExtensions = @{}
+$TypeExtensions = New-Object 'System.Collections.Generic.Dictionary``2[System.String,System.Collections.Generic.List``1[System.Management.Automation.Runspaces.TypeMemberData]]]'
 
 #endregion
 
 #region Add type extension definitions to our hashtable.
 
-Invoke-Snippet -Name ScriptFile.Import -Parameters @{
+Invoke-Snippet -Name ScriptFile.Import -ModuleName SnippetPx -Parameters @{
     Path = Join-Path -Path $PSModuleRoot -ChildPath typedata
 }
 
@@ -52,15 +69,15 @@ Invoke-Snippet -Name ScriptFile.Import -Parameters @{
 
 #region Import the type extensions.
 
-$TypeDataCollection = @()
+$TypeDataCollection = New-Object 'System.Collections.Generic.List``1[System.Management.Automation.Runspaces.TypeData]'
 foreach ($key in $TypeExtensions.Keys) {
     $typeData = New-Object -TypeName System.Management.Automation.Runspaces.TypeData -ArgumentList $key
     foreach ($typeMemberData in $TypeExtensions.$key) {
         $typeData.Members.Add($typeMemberData.Name, $typeMemberData)
     }
-    $TypeDataCollection += $typeData
+    $TypeDataCollection.Add($typeData)
 }
-Update-TypeData -TypeData $TypeDataCollection
+Update-TypeData -TypeData $TypeDataCollection.ToArray()
 
 #endregion
 
@@ -72,7 +89,7 @@ Update-TypeData -TypeData $TypeDataCollection
 
 #region Import public function definitions.
 
-Invoke-Snippet -Name ScriptFile.Import -Parameters @{
+Invoke-Snippet -Name ScriptFile.Import -ModuleName SnippetPx -Parameters @{
     Path = Join-Path -Path $PSModuleRoot -ChildPath functions
 }
 

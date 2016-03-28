@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ function Get-TypeAccelerator {
     try {
         #region Get all type accelerators.
 
-        $typeAccelerators = $script:typeAcceleratorsType::Get | Select-Object -ExpandProperty Keys | Sort-Object
+        $typeAccelerators = $script:TypeAcceleratorsType::Get | Select-Object -ExpandProperty Keys | Sort-Object
 
         #endregion
 
@@ -104,8 +104,8 @@ function Get-TypeAccelerator {
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('Namespace')) {
             :acceleratorLoop foreach ($key in $typeAccelerators) {
                 foreach ($item in $Namespace | ForEach-Object {[System.Text.RegularExpressions.Regex]::Escape($_) -replace '\*','.*' -replace '\?','.'}) {
-                    if (($script:typeAcceleratorsType::Get[$key].FullName -match "^$item\.") -or
-                        (($item -notmatch '^System\.') -and ($script:typeAcceleratorsType::Get[$key].FullName -match "^System\.$item\."))) {
+                    if (($script:TypeAcceleratorsType::Get[$key].FullName -match "^$item\.") -or
+                        (($item -notmatch '^System\.') -and ($script:TypeAcceleratorsType::Get[$key].FullName -match "^System\.$item\."))) {
                         continue acceleratorLoop
                     }
                 }
@@ -126,7 +126,7 @@ function Get-TypeAccelerator {
 
         #region Enumerate all type accelerators and return only those that pass all filters.
 
-        $script:typeAcceleratorsType::Get.GetEnumerator() `
+        $script:TypeAcceleratorsType::Get.GetEnumerator() `
             | Where-Object $filter `
             | Sort-Object -Property Key `
             | ForEach-Object {

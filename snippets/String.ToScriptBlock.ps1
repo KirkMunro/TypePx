@@ -22,14 +22,8 @@ foreach ($key in $VariableValues.Keys) {
 
 #endregion
 
-#region Invoke a snippet to expand the string.
-
-$expandedString = Invoke-Snippet -Name String.Expand -Parameters @{String = $String}
-
-#endregion
-
 #region Return the script block created from the expanded string.
 
-[System.Management.Automation.ScriptBlock]::Create($expandedString)
+[System.Management.Automation.ScriptBlock]::Create($ExecutionContext.InvokeCommand.ExpandString($String))
 
 #endregion

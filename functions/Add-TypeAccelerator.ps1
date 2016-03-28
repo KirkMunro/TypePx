@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -79,29 +79,29 @@ function Add-TypeAccelerator {
         try {
             #region Add the type accelerator if it does not exist or of NoClobber was not used.
 
-            if ((-not $script:typeAcceleratorsType::Get.ContainsKey($Name)) -or
+            if ((-not $script:TypeAcceleratorsType::Get.ContainsKey($Name)) -or
                 (-not $PSCmdlet.MyInvocation.BoundParameters.ContainsKey('NoClobber')) -or
                 (-not $NoClobber)) {
                 if ($PSCmdlet.ShouldProcess($Name)) {
                     # Since this class changed between versions, we need to figure out which approach to take
-                    if (Get-Member -InputObject $script:typeAcceleratorsType -Name AddReplace -Static -ErrorAction Ignore) {
+                    if (Get-Member -InputObject $script:TypeAcceleratorsType -Name AddReplace -Static -ErrorAction Ignore) {
                         #region Add the new type accelerator.
 
-                        $script:typeAcceleratorsType::AddReplace($Name, $Type)
+                        $script:TypeAcceleratorsType::AddReplace($Name, $Type)
 
                         #endregion
                     } else {
                         #region Remove any existing type accelerator with the same name.
 
-                        if ($script:typeAcceleratorsType::Get.ContainsKey($Name)) {
-                            $script:typeAcceleratorsType::Remove($Name) > $null
+                        if ($script:TypeAcceleratorsType::Get.ContainsKey($Name)) {
+                            $script:TypeAcceleratorsType::Remove($Name) > $null
                         }
 
                         #endregion
 
                         #region Add the new type accelerator.
 
-                        $script:typeAcceleratorsType::Add($Name, $Type)
+                        $script:TypeAcceleratorsType::Add($Name, $Type)
 
                         #endregion
                     }

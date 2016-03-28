@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,7 +44,11 @@ function Add-ScriptPropertyData {
         [Parameter(Position=3)]
         [ValidateNotNull()]
         [System.Management.Automation.ScriptBlock]
-        $SetScriptBlock
+        $SetScriptBlock,
+
+        [Parameter()]
+        [System.Management.Automation.SwitchParameter]
+        $IsHidden = $false
     )
     try {
         $constructorArguments = @(
@@ -54,10 +58,12 @@ function Add-ScriptPropertyData {
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('SetScriptBlock')) {
             $constructorArguments += $SetScriptBlock
         }
-        Invoke-Snippet -Name Dictionary.AddArrayItem -Parameters @{
+        $scriptPropertyData = New-Object -TypeName System.Management.Automation.Runspaces.ScriptPropertyData -ArgumentList $constructorArguments
+        $scriptPropertyData.IsHidden = $IsHidden
+        Invoke-Snippet -InputObject $script:SnippetCache['Dictionary.AddListItem'] -Parameters @{
             Dictionary = $script:TypeExtensions
                   Keys = $TypeName
-                 Value = New-Object -TypeName System.Management.Automation.Runspaces.ScriptPropertyData -ArgumentList $constructorArguments
+                 Value = $scriptPropertyData
         }
     } catch {
         $PSCmdlet.ThrowTerminatingError($_)

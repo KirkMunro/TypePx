@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -68,142 +68,129 @@ Add-ScriptMethodData -TypeName $integerTypeNames -ScriptMethodName Times -Script
     }
 }
 
-$timeSpanPropertyScript = @'
+$convertToTimeSpanScriptBlock = {
+    param(
+        [ValidateSet('Years','Months','Weeks','Days','Hours','Minutes','Seconds','Milliseconds')]
+        [System.String]
+        $TimeSpanUnit
+    )
     try {
-        # Identify the property name and the minimum and maximum values for the property
-        `$propertyName = '${PropertyName}'
-        `$minValue = ${MinValue}
-        `$maxValue = ${MaxValue}
+        # Determine the min/max value based on the unit requested
+        switch ($TimeSpanUnit) {
+            'Years' {
+                $minValue = -10000
+                $maxValue = 10000
+                break
+            }
+            'Months' {
+                $minValue = -120000
+                $maxValue = 120000
+                break
+            }
+            'Weeks' {
+                $minValue = [System.Math]::Truncate([System.TimeSpan]::MinValue.TotalDays/7)
+                $maxValue = [System.Math]::Truncate([System.TimeSpan]::MaxValue.TotalDays/7)
+                break
+            }
+            default {
+                $minValue = [System.Math]::Truncate([System.TimeSpan]::MinValue."Total${TimeSpanUnit}")
+                $maxValue = [System.Math]::Truncate([System.TimeSpan]::MaxValue."Total${TimeSpanUnit}")
+                break
+            }
+        }
         # Throw an error if the current value is less than the minimum
-        if (`$this -lt `$minValue) {
-            `$message = . {
+        if ($this -lt $MinValue) {
+            $message = . {
                 [CmdletBinding()]
                 param()
-                `$PSCmdlet.GetResourceString('Metadata','ValidateRangeSmallerThanMinRangeFailure') -f `$propertyName,`$minValue
+                $PSCmdlet.GetResourceString('Metadata','ValidateRangeSmallerThanMinRangeFailure') -f $TimeSpanUnit,$MinValue
             }
-            `$exception = New-Object -TypeName System.ArgumentException -ArgumentList `$message
-            `$errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList `$exception,`$exception.GetType().Name,'InvalidArgument',`$this
-            throw `$errorRecord
+            $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
+            $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception,$exception.GetType().Name,'InvalidArgument',$this
+            throw $errorRecord
         }
         # Throw an error if the current value is more than the maximum
-        if (`$this -gt `$maxValue) {
-            `$message = . {
+        if ($this -gt $MaxValue) {
+            $message = . {
                 [CmdletBinding()]
                 param()
-                `$PSCmdlet.GetResourceString('Metadata','ValidateRangeGreaterThanMaxRangeFailure') -f `$propertyName,`$maxValue
+                $PSCmdlet.GetResourceString('Metadata','ValidateRangeGreaterThanMaxRangeFailure') -f $TimeSpanUnit,$MaxValue
             }
-            `$exception = New-Object -TypeName System.ArgumentException -ArgumentList `$message
-            `$errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList `$exception,`$exception.GetType().Name,'InvalidArgument',`$this
-            throw `$errorRecord
+            $exception = New-Object -TypeName System.ArgumentException -ArgumentList $message
+            $errorRecord = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $exception,$exception.GetType().Name,'InvalidArgument',$this
+            throw $errorRecord
         }
         # Handle the property differently for Years and Months than standard timespan properties
-        switch (`$propertyName) {
+        switch ($TimeSpanUnit) {
             'Years' {
                 # Calculate the timespan using DateTime arithmetic
-                `$now = Get-Date
-                if (`$this -ge 0) {
-                    `$timeSpan = `$now.AddYears(`$this) - `$now
+                $now = Get-Date
+                if ($this -ge 0) {
+                    $timeSpan = $now.AddYears($this) - $now
                 } else {
-                    `$timeSpan = `$now - `$now.AddYears(`$this)
+                    $timeSpan = $now - $now.AddYears($this)
                 }
                 # Add an ETS identifier to the timespan
-                `$timeSpan.PSTypeNames.Insert(0,'System.TimeSpan#Years')
+                $timeSpan.PSTypeNames.Insert(0,'System.TimeSpan#Years')
                 # Return the timespan with the TotalYears added to it as a member
-                Add-Member -InputObject `$timeSpan -Name TotalYears -MemberType NoteProperty -Value `$this -PassThru
+                Add-Member -InputObject $timeSpan -Name TotalYears -MemberType NoteProperty -Value $this -PassThru
                 break
             }
             'Months' {
                 # Calculate the timespan using DateTime arithmetic
-                `$now = Get-Date
-                if (`$this -ge 0) {
-                    `$timeSpan = `$now.AddMonths(`$this) - `$now
+                $now = Get-Date
+                if ($this -ge 0) {
+                    $timeSpan = $now.AddMonths($this) - $now
                 } else {
-                    `$timeSpan = `$now - `$now.AddMonths(`$this)
+                    $timeSpan = $now - $now.AddMonths($this)
                 }
                 # Add an ETS identifier to the timespan
-                `$timeSpan.PSTypeNames.Insert(0,'System.TimeSpan#Months')
+                $timeSpan.PSTypeNames.Insert(0,'System.TimeSpan#Months')
                 # Return the timespan with the TotalMonths added to it as a member
-                Add-Member -InputObject `$timeSpan -Name TotalMonths -MemberType NoteProperty -Value `$this -PassThru
+                Add-Member -InputObject $timeSpan -Name TotalMonths -MemberType NoteProperty -Value $this -PassThru
                 break
             }
             default {
                 # Determine which timespan constructor argument to start with, as well as the starting value
-                if (`$propertyName -eq 'Weeks') {
-                    `$argumentIndex = 0
-                    `$value = `$this * 7
+                if ($TimeSpanUnit -eq 'Weeks') {
+                    $argumentIndex = 0
+                    $value = $this * 7
                 } else {
-                    `$argumentIndex = @('Days','Hours','Minutes','Seconds','Milliseconds').IndexOf(`$propertyName)
-                    `$value = `$this
+                    $argumentIndex = @('Days','Hours','Minutes','Seconds','Milliseconds').IndexOf($TimeSpanUnit)
+                    $value = $this
                 }
                 # Identify the timespan constructor arguments and their maximum values (if any)
-                `$argumentList = @(0,0,0,0,0)
-                `$argumentMax = @(-1,24,60,60,1000)
+                $argumentList = @(0,0,0,0,0)
+                $argumentMax = @(-1,24,60,60,1000)
                 # Set the starting value and calculate the remainder
-                `$argumentList[`$argumentIndex] = [System.Math]::Truncate(`$value)
-                `$remainder = `$value % 1
+                $argumentList[$argumentIndex] = [System.Math]::Truncate($value)
+                $remainder = $value % 1
                 # As long as there is a remainder and we haven't processed all values, calculate and set the next
                 # value and then calculate the remainder
-                while ((`$remainder -gt 0) -and
-                       (`$argumentIndex -lt 4)) {
-                    `$argumentIndex++
-                    `$value = `$remainder * `$argumentMax[`$argumentIndex]
-                    `$argumentList[`$argumentIndex] = [System.Math]::Truncate(`$value)
-                    `$remainder = `$value % 1
+                while (($remainder -gt 0) -and
+                        ($argumentIndex -lt 4)) {
+                    $argumentIndex++
+                    $value = $remainder * $argumentMax[$argumentIndex]
+                    $argumentList[$argumentIndex] = [System.Math]::Truncate($value)
+                    $remainder = $value % 1
                 }
                 # Return the timespan to the caller
-                New-Object -TypeName System.TimeSpan -ArgumentList `$argumentList
+                New-Object -TypeName System.TimeSpan -ArgumentList $argumentList
             }
         }
     } catch {
-        if (`$ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
-            `$PSCmdlet.ThrowTerminatingError(`$_)
+        if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+            $PSCmdlet.ThrowTerminatingError($_)
         } else {
             throw
         }
     }
-'@
-
-$timeSpanPropertyScriptBlock = Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
-            String = $timeSpanPropertyScript
-    VariableValues = @{
-                     propertyName = 'Years'
-                     minValue = -10000
-                     maxValue = 10000
-                     }
 }
-Add-ScriptPropertyData -TypeName $integerTypeNames -ScriptPropertyName $propertyName -GetScriptBlock $timeSpanPropertyScriptBlock
+Add-ScriptMethodData -TypeName $integerTypeNames -ScriptMethodName ConvertToTimeSpan -ScriptBlock $convertToTimeSpanScriptBlock
 
-$timeSpanPropertyScriptBlock = Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
-            String = $timeSpanPropertyScript
-    VariableValues = @{
-                     propertyName = 'Months'
-                     minValue = -120000
-                     maxValue = 120000
-                     }
-}
-Add-ScriptPropertyData -TypeName $integerTypeNames -ScriptPropertyName $propertyName -GetScriptBlock $timeSpanPropertyScriptBlock
-
-$timeSpanPropertyScriptBlock = Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
-            String = $timeSpanPropertyScript
-    VariableValues = @{
-                     propertyName = 'Weeks'
-                     minValue = [System.Math]::Truncate([System.TimeSpan]::MinValue.TotalDays/7)
-                     maxValue = [System.Math]::Truncate([System.TimeSpan]::MaxValue.TotalDays/7)
-                     }
-}
-Add-ScriptPropertyData -TypeName $numericTypeNames -ScriptPropertyName $propertyName -GetScriptBlock $timeSpanPropertyScriptBlock
-
-foreach ($propertyName in 'Days','Hours','Minutes','Seconds','Milliseconds') {
-    $timeSpanPropertyScriptBlock = Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
-                String = $timeSpanPropertyScript
-        VariableValues = @{
-                         minValue = [System.Math]::Truncate([System.TimeSpan]::MinValue."Total${propertyName}")
-                         maxValue = [System.Math]::Truncate([System.TimeSpan]::MaxValue."Total${propertyName}")
-                         }
-    }
-    Add-ScriptPropertyData -TypeName $numericTypeNames -ScriptPropertyName $propertyName -GetScriptBlock $timeSpanPropertyScriptBlock
+foreach ($timeSpanUnit in @('Years','Months','Weeks','Days','Hours','Minutes','Seconds','Milliseconds')) {
+    Add-ScriptPropertyData -TypeName $numericTypeNames -ScriptPropertyName $timeSpanUnit -GetScriptBlock $ExecutionContext.InvokeCommand.NewScriptBlock("`$this.ConvertToTimeSpan('$timeSpanUnit')")
+    Add-AliasPropertyData -TypeName $numericTypeNames -AliasPropertyName ($timeSpanUnit -replace 's$') -TargetPropertyName $timeSpanUnit
 }
 
-foreach ($scriptPropertyIdentifier in @('Years','Months','Weeks','Days','Hours','Minutes','Seconds','Milliseconds')) {
-    Add-AliasPropertyData -TypeName $numericTypeNames -AliasPropertyName ($scriptPropertyIdentifier -replace 's$') -TargetPropertyName $scriptPropertyIdentifier
-}
+Add-ScriptPropertyData -TypeName $numericTypeNames -ScriptPropertyName Score -GetScriptBlock {$this * 20}

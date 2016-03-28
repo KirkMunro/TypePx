@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,6 +57,44 @@ Add-ScriptPropertyData -TypeName $typeName -ScriptPropertyName Ago -GetScriptBlo
         } else {
             (Get-Date).Subtract($this)
         }
+    } catch {
+        if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+            $PSCmdlet.ThrowTerminatingError($_)
+        } else {
+            throw
+        }
+    }
+}
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Before -ScriptBlock {
+    [System.Diagnostics.DebuggerStepThrough()]
+    param(
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.DateTime]
+        $Date
+    )
+    try {
+        $Date.Add(-$this)
+    } catch {
+        if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
+            $PSCmdlet.ThrowTerminatingError($_)
+        } else {
+            throw
+        }
+    }
+}
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName After -ScriptBlock {
+    [System.Diagnostics.DebuggerStepThrough()]
+    param(
+        [Parameter(Position=0, Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.DateTime]
+        $Date
+    )
+    try {
+        $Date.Add($this)
     } catch {
         if ($ExecutionContext.SessionState.PSVariable.Get('PSCmdlet')) {
             $PSCmdlet.ThrowTerminatingError($_)

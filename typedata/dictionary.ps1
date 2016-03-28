@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -148,7 +148,7 @@ Add-ScriptMethodData -TypeName $dictionaryTypeNames -ScriptMethodName AddArrayIt
         $Value += $args
     }
     # Invoke a snippet to add the item to the collection
-    . (Get-Module TypePx) Invoke-Snippet -Name Dictionary.AddArrayItem -Parameters @{
+    . (Get-Module TypePx) Invoke-Snippet -InputObject $script:SnippetCache['Dictionary.AddArrayItem'] -Parameters @{
         Dictionary = $this
               Keys = $Key
              Value = $Value

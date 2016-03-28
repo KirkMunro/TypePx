@@ -7,7 +7,7 @@ Type acceleration also contributes to making scripting easier and they help
 produce more readable scripts, particularly when using a library of .NET
 classes that belong to the same namespace.
 
-Copyright 2014 Kirk Munro
+Copyright 2016 Kirk Munro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToScriptBlock -Script
         $VariableValues = @{}
     )
     # Invoke a snippet to convert the string to a script block
-    . (Get-Module TypePx) Invoke-Snippet -Name String.ToScriptBlock -Parameters @{
+    . (Get-Module TypePx) Invoke-Snippet -InputObject $script:SnippetCache['String.ToScriptBlock'] -Parameters @{
         String = $this
         VariableValues = $VariableValues
     }
@@ -52,8 +52,8 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName ToScriptBlock -Script
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName Expand -ScriptBlock {
     [System.Diagnostics.DebuggerStepThrough()]
     param()
-    # Invoke a snippet to expand the string
-    . (Get-Module TypePx) Invoke-Snippet -Name String.Expand -Parameters @{String = $this}
+    # Invoke a method to expand the string
+    $ExecutionContext.InvokeCommand.ExpandString($this)
 }
 
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName MatchAny -ScriptBlock {
@@ -90,6 +90,47 @@ Add-ScriptMethodData -TypeName $typeName -ScriptMethodName LikeAny -ScriptBlock 
     # Return true if any of the wildcard strings are like the string; false otherwise
     $stringToCompare = $this
     $Values.where({$stringToCompare -like $_}).Count -gt 0
+}
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName IsHtmlEncoded -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param()
+    # Return true if the string appears to be fully HTML encoded; false otherwise
+    if (-not ('System.Web.HttpUtility')) {
+        [System.Reflection.Assembly]::Load('System.Web, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a') > $null
+    }
+    $decodedString = [System.Web.HttpUtility]::HtmlDecode($this)
+    $encodedString = [System.Web.HttpUtility]::HtmlEncode($decodedString)
+    $encodedString -eq $this
+}
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName HtmlEncode -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param(
+        # A flag if you want to force the encoding
+        [Parameter()]
+        [System.Management.Automation.SwitchParameter]
+        $Force = $false
+    )
+    # Return the HTML encoded version of the string
+    if (-not ('System.Web.HttpUtility')) {
+        [System.Reflection.Assembly]::Load('System.Web, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a') > $null
+    }
+    if ($Force -or -not $this.IsHtmlEncoded()) {
+        [System.Web.HttpUtility]::HtmlEncode($this)
+    } else {
+        $this
+    }
+}
+
+Add-ScriptMethodData -TypeName $typeName -ScriptMethodName HtmlDecode -ScriptBlock {
+    [System.Diagnostics.DebuggerHidden()]
+    param()
+    # Return the HTML decoded version of the string
+    if (-not ('System.Web.HttpUtility')) {
+        [System.Reflection.Assembly]::Load('System.Web, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a') > $null
+    }
+    [System.Web.HttpUtility]::HtmlDecode($this)
 }
 
 Add-ScriptMethodData -TypeName $typeName -ScriptMethodName GetMD5Hash -ScriptBlock {
